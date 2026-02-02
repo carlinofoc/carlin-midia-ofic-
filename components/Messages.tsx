@@ -7,7 +7,19 @@ import { simulateAIResponse } from '../services/geminiService';
 const MOCK_CHATS: Chat[] = [
   {
     id: 'c1',
-    user: { id: 'u1', username: 'crypto_wiz', displayName: 'Elena Crypto', avatar: 'https://picsum.photos/seed/chat1/100/100', followers: 120, following: 100 },
+    // Added missing User properties to satisfy the type definition
+    user: { 
+      id: 'u1', 
+      username: 'crypto_wiz', 
+      displayName: 'Elena Crypto', 
+      avatar: 'https://picsum.photos/seed/chat1/100/100', 
+      followers: 120, 
+      following: 100,
+      nome_encrypted: { encrypted: '', iv: '', tag: '' },
+      email_encrypted: { encrypted: '', iv: '', tag: '' },
+      passwordHash: '',
+      chave: '',
+    },
     lastMessage: 'Check out the new NFT drop!',
     messages: [
       { id: 'm1', senderId: 'u1', text: 'Hey! Did you see the new collection?', timestamp: new Date() }
@@ -15,7 +27,20 @@ const MOCK_CHATS: Chat[] = [
   },
   {
     id: 'c2',
-    user: { id: 'u2', username: 'ai_buddy', displayName: 'Nexus AI (Simulation)', avatar: 'https://picsum.photos/seed/ai/100/100', followers: 1000, following: 0, isVerified: true },
+    // Added missing User properties to satisfy the type definition
+    user: { 
+      id: 'u2', 
+      username: 'ai_buddy', 
+      displayName: 'Nexus AI (Simulation)', 
+      avatar: 'https://picsum.photos/seed/ai/100/100', 
+      followers: 1000, 
+      following: 0, 
+      isVerified: true,
+      nome_encrypted: { encrypted: '', iv: '', tag: '' },
+      email_encrypted: { encrypted: '', iv: '', tag: '' },
+      passwordHash: '',
+      chave: '',
+    },
     lastMessage: 'I am here to help you!',
     messages: [
       { id: 'm1', senderId: 'u2', text: 'Hello! I am Nexus AI. Ask me anything about the platform!', timestamp: new Date(), isAI: true }

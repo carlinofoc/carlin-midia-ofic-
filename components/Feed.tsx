@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, User, FeedItem, Ad } from '../types';
 import { Icons } from '../constants';
@@ -70,7 +69,9 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
             if ('type' in item && item.type === 'ad') {
               return <AdItem key={item.id} ad={item as Ad} />;
             }
-            return <PostCard key={item.id} post={item as Post} isOwnPost={item.userId === currentUser.id || item.userId === 'me'} currentUser={currentUser} />;
+            // Corrected 'userId' to 'autor_id' as defined in Post interface
+            const postItem = item as Post;
+            return <PostCard key={item.id} post={postItem} isOwnPost={postItem.autor_id === currentUser.id || postItem.autor_id === 'me'} currentUser={currentUser} />;
           })}
           
           {/* Conscious End Message */}

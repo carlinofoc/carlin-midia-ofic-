@@ -2,15 +2,17 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Always use process.env.API_KEY directly when initializing the GoogleGenAI client
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateCaption = async (topic: string): Promise<string> => {
+  // Create instance right before call as per best practices
   const ai = getAI();
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Create a viral social media caption for a post about: ${topic}. Use emojis and hashtags. Keep it under 30 words.`,
     });
+    // Use .text property directly
     return response.text?.trim() || "Exploring new horizons! #vibes";
   } catch (error) {
     console.error("AI Caption Error:", error);
@@ -28,6 +30,7 @@ export const simulateAIResponse = async (userMessage: string, chatContext: strin
         systemInstruction: "Keep responses short, engaging, and casual. Use 1-2 emojis.",
       }
     });
+    // Use .text property directly
     return response.text?.trim() || "That's awesome! 😊";
   } catch (error) {
     console.error("AI Response Error:", error);
@@ -62,11 +65,14 @@ export const analyzeVerification = async (base64Selfie: string): Promise<{ succe
             confidence: { type: Type.NUMBER },
             message: { type: Type.STRING }
           },
+          propertyOrdering: ["success", "confidence", "message"],
           required: ["success", "confidence", "message"]
         }
       }
     });
-    return JSON.parse(response.text?.trim() || '{"success":true, "confidence":0.98, "message":"Identidade biométrica confirmada."}');
+    // Use .text property directly and handle potential undefined
+    const jsonStr = (response.text || "").trim();
+    return JSON.parse(jsonStr || '{"success":true, "confidence":0.98, "message":"Identidade biométrica confirmada."}');
   } catch (error) {
     console.error("Verification Error:", error);
     return { success: true, confidence: 0.95, message: "Biometria facial validada com sucesso." };
@@ -103,11 +109,14 @@ export const analyzeProfilePhoto = async (base64Image: string): Promise<{ safe: 
             authentic: { type: Type.BOOLEAN },
             reason: { type: Type.STRING }
           },
+          propertyOrdering: ["safe", "authentic", "reason"],
           required: ["safe", "authentic"]
         }
       }
     });
-    return JSON.parse(response.text?.trim() || '{"safe":true, "authentic":true}');
+    // Use .text property directly and handle potential undefined
+    const jsonStr = (response.text || "").trim();
+    return JSON.parse(jsonStr || '{"safe":true, "authentic":true}');
   } catch (error) {
     console.error("Profile Photo Analysis Error:", error);
     return { safe: true, authentic: true }; // Fallback
@@ -131,11 +140,14 @@ export const moderateBio = async (bio: string): Promise<{ approved: boolean; rea
             approved: { type: Type.BOOLEAN },
             reason: { type: Type.STRING }
           },
+          propertyOrdering: ["approved", "reason"],
           required: ["approved"]
         }
       }
     });
-    return JSON.parse(response.text?.trim() || '{"approved":true}');
+    // Use .text property directly and handle potential undefined
+    const jsonStr = (response.text || "").trim();
+    return JSON.parse(jsonStr || '{"approved":true}');
   } catch (error) {
     console.error("Bio Moderation Error:", error);
     return { approved: true }; // Fallback

@@ -10,9 +10,10 @@ interface AdvancedSettingsProps {
   onToggleDark: () => void;
   isLite: boolean;
   onToggleLite: () => void;
+  onOpenSecurityCenter: () => void;
 }
 
-const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ user, onBack, isDark, onToggleDark, isLite, onToggleLite }) => {
+const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ user, onBack, isDark, onToggleDark, isLite, onToggleLite, onOpenSecurityCenter }) => {
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
 
   return (
@@ -33,6 +34,23 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ user, onBack, isDar
 
         {/* Categories Section */}
         <div className="space-y-4">
+           {/* Categoria: Segurança Proativa */}
+           <SettingsCategory title="Segurança & Criptografia" icon="🛡️">
+              <ActionButton 
+                label="Central de Segurança" 
+                desc="Gerencie chaves, hashes e cofre de dados AES." 
+                onClick={onOpenSecurityCenter} 
+                highlight={true}
+              />
+              <ToggleOption 
+                label="Proteção Biométrica Ativa" 
+                desc="Exige verificação facial para abrir o app." 
+                active={user.isFaciallyVerified || false} 
+                onToggle={() => alert('Sua identidade já está vinculada biometricamente.')} 
+                disabled={!user.isFaciallyVerified}
+              />
+           </SettingsCategory>
+
            {/* Categoria: Interface */}
            <SettingsCategory title="Interface & Experiência" icon="🎨">
               <ToggleOption 
@@ -56,7 +74,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ user, onBack, isDar
            </SettingsCategory>
 
            {/* Categoria: Privacidade Ativa */}
-           <SettingsCategory title="Privacidade Ativa" icon="🛡️">
+           <SettingsCategory title="Privacidade Ativa" icon="🔒">
               <ActionButton 
                 label="Exportar Meus Dados" 
                 desc="Baixe um arquivo JSON com todas as suas informações." 
@@ -64,22 +82,8 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ user, onBack, isDar
               />
               <ActionButton 
                 label="Limpar Cache Local" 
-                desc="Remove imagens e vídeos temporários para liberar espaço." 
+                desc="Remove imagens e vídeos temporários." 
                 onClick={() => alert('Cache limpo com sucesso.')} 
-              />
-           </SettingsCategory>
-
-           {/* Categoria: Laboratório (Escalabilidade) */}
-           <SettingsCategory title="Carlin Labs" icon="🧪">
-              <p className="px-6 py-2 text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-relaxed">
-                Recursos experimentais que ainda estão sendo refinados pela nossa mente independente.
-              </p>
-              <ToggleOption 
-                label="Modo Foco Extremo" 
-                desc="Esconde todos os números de curtidas para saúde mental." 
-                active={false} 
-                onToggle={() => {}} 
-                disabled={true}
               />
            </SettingsCategory>
         </div>
@@ -91,7 +95,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ user, onBack, isDar
            </p>
            <div className="pt-4 border-t border-zinc-800">
               <p className="text-[8px] text-zinc-700 font-black uppercase tracking-widest">
-                Versão do Firmware Visual: v4.1.2
+                Versão do Firmware Visual: v4.1.5
               </p>
            </div>
         </div>
@@ -100,7 +104,6 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ user, onBack, isDar
   );
 };
 
-// Fix: Make children optional to resolve Property 'children' is missing in type errors.
 const SettingsCategory = ({ title, icon, children }: { title: string, icon: string, children?: React.ReactNode }) => (
   <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-xl">
     <div className="px-8 py-5 border-b border-zinc-800 flex items-center gap-3">
@@ -129,16 +132,16 @@ const ToggleOption = ({ label, desc, active, onToggle, disabled = false }: { lab
   </div>
 );
 
-const ActionButton = ({ label, desc, onClick }: { label: string, desc: string, onClick: () => void }) => (
+const ActionButton = ({ label, desc, onClick, highlight = false }: { label: string, desc: string, onClick: () => void, highlight?: boolean }) => (
   <button 
     onClick={onClick}
-    className="w-full flex items-center justify-between p-6 rounded-3xl hover:bg-zinc-800 transition-colors text-left"
+    className={`w-full flex items-center justify-between p-6 rounded-3xl hover:bg-zinc-800 transition-colors text-left ${highlight ? 'bg-zinc-800/30' : ''}`}
   >
     <div className="flex-1 pr-6 space-y-1">
-       <h4 className="text-xs font-black uppercase text-white tracking-widest">{label}</h4>
+       <h4 className={`text-xs font-black uppercase tracking-widest ${highlight ? 'text-red-500' : 'text-white'}`}>{label}</h4>
        <p className="text-[10px] text-zinc-500 leading-tight">{desc}</p>
     </div>
-    <svg className="w-5 h-5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className={`w-5 h-5 ${highlight ? 'text-red-500' : 'text-zinc-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
     </svg>
   </button>

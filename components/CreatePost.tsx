@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Post } from '../types';
 import { Icons } from '../constants';
@@ -37,9 +36,10 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onCancel }) => {
   const handleSubmit = () => {
     if (!selectedFile) return;
 
+    // Corrected 'userId' to 'autor_id' to match Post interface
     const newPost: Post = {
       id: Date.now().toString(),
-      userId: 'me',
+      autor_id: 'me',
       username: 'nexus_user',
       userAvatar: 'https://picsum.photos/seed/me/100/100',
       content: caption,

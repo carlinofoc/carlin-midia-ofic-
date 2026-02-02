@@ -1,13 +1,60 @@
 
-export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register' | 'dashboard' | 'verification' | 'biometric_policy' | 'ad_controls' | 'monetization_manifesto' | 'beta_center' | 'creator_plus' | 'beta_terms' | 'roadmap' | 'creator_plus_faq' | 'monetization_info' | 'cancel_subscription' | 'notification_settings' | 'developer_info' | 'developer_manifesto' | 'advanced_settings';
+export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register' | 'login' | 'dashboard' | 'verification' | 'biometric_policy' | 'ad_controls' | 'monetization_manifesto' | 'beta_center' | 'creator_plus' | 'beta_terms' | 'roadmap' | 'creator_plus_faq' | 'monetization_info' | 'cancel_subscription' | 'notification_settings' | 'developer_info' | 'developer_manifesto' | 'advanced_settings' | 'security_center';
 export type FeedMode = 'followers' | 'discovery' | 'relevance';
 export type FeedFormatPreference = 'posts' | 'videos' | 'balanced';
 
-export interface NotificationPrefs {
-  performance: boolean;
-  educational: boolean;
-  security: boolean;
-  community: boolean;
+export interface EncryptedPayload {
+  encrypted: string;
+  iv: string;
+  tag: string;
+}
+
+// Tabela: Usuarios (Mock Mongoose Schema)
+export interface User {
+  id: string;
+  username: string;
+  displayName: string; // Descriptografado em memória
+  nome_encrypted: EncryptedPayload;
+  email_encrypted: EncryptedPayload;
+  passwordHash: string; // senha_hash
+  chave: string; // Buffer Hex (Chave AES individual do usuário)
+  avatar: string;
+  bio?: string;
+  followers: number;
+  following: number;
+  isVerified?: boolean;
+  isFaciallyVerified?: boolean;
+  isPremium?: boolean;
+  isBetaTester?: boolean;
+  email?: string; // Descriptografado em memória
+  sessionToken?: string; // JWT
+}
+
+// Tabela: Conteudos
+export interface Post {
+  id: string;
+  autor_id: string;
+  username: string;
+  userAvatar: string;
+  content: string;
+  conteudo_encrypted?: EncryptedPayload;
+  media: string[];
+  type: 'image' | 'video' | 'carousel';
+  likes: number;
+  comments: number;
+  timestamp: string;
+  stats?: PostStats;
+  isVerified?: boolean;
+}
+
+export interface PostStats {
+  followerReach: number;
+  nonFollowerReach: number;
+  engagementRate: number;
+  relevanceScore: number;
+  saves: number;
+  shares: number;
+  isContinuousCirculation: boolean;
 }
 
 export interface AdCategoryConfig {
@@ -16,86 +63,14 @@ export interface AdCategoryConfig {
   tools: boolean;
   investments: boolean;
   brands: boolean;
-  casino: boolean; // Sempre falso por regra de negócio
+  casino: boolean; 
 }
 
-export interface BetaComment {
-  id: string;
-  userId: string;
-  username: string;
-  text: string;
-  timestamp: Date;
-}
-
-export interface BetaFeature {
-  id: string;
-  title: string;
-  description: string;
-  votes: number;
-  status: 'voting' | 'development' | 'testing' | 'shipped';
-  comments?: BetaComment[];
-}
-
-export interface RoadmapItem {
-  id: string;
-  title: string;
-  description: string;
-  status: 'planned' | 'development' | 'testing';
-  estimatedQuarter?: string;
-}
-
-export interface User {
-  id: string;
-  username: string;
-  displayName: string;
-  avatar: string;
-  bio?: string;
-  followers: number;
-  following: number;
-  isVerified?: boolean;
-  isFaciallyVerified?: boolean;
-  isPremium?: boolean; // Criador+
-  isBetaTester?: boolean;
-  betaNotifications?: boolean;
-  riskLevel?: 'low' | 'medium' | 'high';
-  isSuspicious?: boolean;
-  email?: string;
-  phone?: string;
-  adSettings?: AdCategoryConfig;
-  notificationPrefs?: NotificationPrefs;
-}
-
-export interface PostStats {
-  followerReach: number;
-  nonFollowerReach: number;
-  engagementRate: number;
-  relevanceScore: number; // 0-100
-  retentionRate?: number; // Relevante para vídeos
-  relevanceIndicators: string[]; // ["Educação", "Inspiração", "Solução"]
-  recommendationReason?: string;
-  saves: number;
-  shares: number;
-  isContinuousCirculation: boolean; // Se o post ainda está sendo distribuído ativamente
-}
-
-export interface Post {
-  id: string;
-  userId: string;
-  username: string;
-  userAvatar: string;
-  content: string;
-  media: string[];
-  type: 'image' | 'video' | 'carousel';
-  likes: number;
-  comments: number;
-  timestamp: string;
-  location?: string;
-  category?: string;
-  isFromFollower?: boolean;
-  stats?: PostStats;
-  isVerified?: boolean;
-  isSuspicious?: boolean;
-  userRiskLevel?: 'low' | 'medium' | 'high';
+export interface NotificationPrefs {
+  performance: boolean;
+  educational: boolean;
+  security: boolean;
+  community: boolean;
 }
 
 export interface Ad {
@@ -134,4 +109,28 @@ export interface Chat {
   user: User;
   lastMessage: string;
   messages: Message[];
+}
+
+export interface BetaComment {
+  id: string;
+  userId: string;
+  username: string;
+  text: string;
+  timestamp: Date;
+}
+
+export interface BetaFeature {
+  id: string;
+  title: string;
+  description: string;
+  votes: number;
+  status: 'voting' | 'testing' | 'development';
+  comments: BetaComment[];
+}
+
+export interface RoadmapItem {
+  id: string;
+  title: string;
+  description: string;
+  status: 'planned' | 'development' | 'testing';
 }
