@@ -113,3 +113,31 @@ export const analyzeProfilePhoto = async (base64Image: string): Promise<{ safe: 
     return { safe: true, authentic: true }; // Fallback
   }
 };
+
+/**
+ * Modera o conteúdo de uma biografia para garantir que seja seguro.
+ */
+export const moderateBio = async (bio: string): Promise<{ approved: boolean; reason?: string }> => {
+  const ai = getAI();
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Analise esta biografia de rede social quanto a discurso de ódio, golpes, spam ou conteúdo adulto: "${bio}". Retorne JSON com o campo "approved" (boolean) e "reason" (string, se não aprovado).`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            approved: { type: Type.BOOLEAN },
+            reason: { type: Type.STRING }
+          },
+          required: ["approved"]
+        }
+      }
+    });
+    return JSON.parse(response.text?.trim() || '{"approved":true}');
+  } catch (error) {
+    console.error("Bio Moderation Error:", error);
+    return { approved: true }; // Fallback
+  }
+};

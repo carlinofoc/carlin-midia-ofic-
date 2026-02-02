@@ -1,11 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Post, User } from '../types';
+import { Post, User, FeedItem, Ad } from '../types';
 import { Icons } from '../constants';
 import SuspiciousAlert from './SuspiciousAlert';
+import AdItem from './AdItem';
 
 interface FeedProps {
-  posts: Post[];
+  posts: FeedItem[];
   currentUser: User;
   showInstaBanner?: boolean;
   onCloseBanner?: () => void;
@@ -65,9 +66,12 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
           <p className="text-[10px] text-zinc-500 mt-2 uppercase">Aguardando conteúdos que eduquem ou inspirem.</p>
         </div>
       ) : (
-        posts.map((post) => (
-          <PostCard key={post.id} post={post} isOwnPost={post.userId === currentUser.id || post.userId === 'me'} currentUser={currentUser} />
-        ))
+        posts.map((item) => {
+          if ('type' in item && item.type === 'ad') {
+            return <AdItem key={item.id} ad={item as Ad} />;
+          }
+          return <PostCard key={item.id} post={item as Post} isOwnPost={item.userId === currentUser.id || item.userId === 'me'} currentUser={currentUser} />;
+        })
       )}
       <div className="h-24"></div>
     </div>
@@ -138,7 +142,6 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
   }, []);
 
   const isHighlyRelevant = post.stats?.relevanceScore && post.stats.relevanceScore > 85;
-  // Fix: Leverage updated Post interface instead of manual casting
   const isUserVerified = (isOwnPost && currentUser?.isFaciallyVerified) || (!isOwnPost && post.isVerified);
   const userRiskLevel = post.userRiskLevel;
 
@@ -288,12 +291,5 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
     </article>
   );
 };
-
-const MetricCard = ({ label, value }: { label: string, value: string | number }) => (
-  <div className="text-center p-2.5 rounded-2xl bg-black/30 border border-white/5">
-    <p className="text-xs font-black text-white tracking-tighter">{value}</p>
-    <p className="text-[7px] text-zinc-500 font-black uppercase tracking-tighter mt-1">{label}</p>
-  </div>
-);
 
 export default Feed;

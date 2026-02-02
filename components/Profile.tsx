@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { User } from '../types';
 import { Icons } from '../constants';
 import EditProfilePhoto from './EditProfilePhoto';
+import EditBio from './EditBio';
 
 interface ProfileProps {
   user: User;
@@ -15,12 +16,22 @@ interface ProfileProps {
   onOpenDashboard: () => void;
   onOpenVerification: () => void;
   onUpdateUser: (updatedUser: User) => void;
+  onOpenAdControls: () => void;
+  onOpenManifesto: () => void;
+  onOpenBetaCenter: () => void;
+  onOpenCreatorPlus: () => void;
+  onOpenRoadmap: () => void;
+  onOpenMonetizationInfo: () => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isLite, onToggleLite, isDark, onToggleDark, onOpenDashboard, onOpenVerification, onUpdateUser }) => {
+const Profile: React.FC<ProfileProps> = ({ 
+  user, onOpenTerms, onOpenPrivacy, isLite, onToggleLite, isDark, onToggleDark, 
+  onOpenDashboard, onOpenVerification, onUpdateUser, onOpenAdControls, onOpenManifesto, onOpenBetaCenter, onOpenCreatorPlus, onOpenRoadmap, onOpenMonetizationInfo 
+}) => {
   const [tab, setTab] = useState<'posts' | 'saved' | 'tagged'>('posts');
   const [showLiteHelp, setShowLiteHelp] = useState(false);
   const [showEditPhoto, setShowEditPhoto] = useState(false);
+  const [showEditBio, setShowEditBio] = useState(false);
 
   const containerClasses = isDark ? "bg-black text-white" : "bg-zinc-50 text-zinc-900";
   const cardClasses = isDark ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-sm";
@@ -31,8 +42,13 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
     setShowEditPhoto(false);
   };
 
+  const handleBioUpdate = (newBio: string) => {
+    onUpdateUser({ ...user, bio: newBio });
+    setShowEditBio(false);
+  };
+
   return (
-    <div className={`w-full max-w-2xl mx-auto pt-14 lg:pt-8 ${containerClasses} min-h-screen transition-colors`}>
+    <div className={`w-full max-w-2xl mx-auto pt-14 lg:pt-8 ${containerClasses} min-h-screen transition-colors pb-32`}>
       {/* Header Info */}
       <div className="px-5 py-6 space-y-6">
         <div className="flex items-center justify-between gap-6">
@@ -77,31 +93,39 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
           <div className="flex items-center gap-1.5">
             <h2 className="font-black text-lg">{user.displayName}</h2>
             {user.isVerified && <Icons.Verified className="w-4 h-4" />}
+            {user.isBetaTester && (
+               <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-500 text-[8px] font-black rounded border border-zinc-700 uppercase tracking-widest">Beta</span>
+            )}
           </div>
           <p className="text-xs text-blue-500 font-bold uppercase tracking-widest flex items-center gap-2">
             @{user.username}
-            {isLite && <span className="bg-blue-500/20 text-blue-500 text-[8px] px-1.5 py-0.5 rounded font-black">LITE ATIVO</span>}
+            {isLite && <span className="bg-blue-500/20 text-blue-500 text-[8px] px-1.5 py-0.5 rounded font-black">LITE</span>}
+            {user.isPremium && <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-blue-500 text-transparent bg-clip-text font-black">CRIADOR+</span>}
           </p>
-          <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'} leading-relaxed mt-2`}>{user.bio}</p>
-          
-          {user.isFaciallyVerified && (
-            <div className="flex items-center gap-2 bg-blue-600/5 border border-blue-600/10 px-3 py-2 rounded-xl mt-3">
-               <span className="text-blue-500 text-sm">🛡️</span>
-               <p className="text-[10px] text-zinc-400 font-medium leading-tight">
-                 Perfil verificado por reconhecimento facial e atividade real como criador.
-               </p>
-            </div>
-          )}
+          <div className="relative group">
+            <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'} leading-relaxed mt-2 whitespace-pre-wrap`}>
+              {user.bio || "Sem biografia ainda."}
+            </p>
+          </div>
         </div>
 
         {/* Main Actions */}
         <div className="space-y-3">
           <button 
+            onClick={user.isPremium ? onOpenBetaCenter : onOpenCreatorPlus}
+            className={`w-full ${user.isPremium ? 'bg-zinc-900 border border-zinc-800' : 'bg-gradient-to-r from-indigo-600 to-blue-600'} text-white py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] transition-all relative overflow-hidden group`}
+          >
+            {user.isPremium && <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>}
+            <span className="text-xl group-hover:scale-110 transition-transform">{user.isPremium ? '🧪' : '💎'}</span>
+            <span className="text-xs font-black uppercase tracking-widest">{user.isPremium ? 'Acessar LABS (Beta)' : 'Seja Criador+'}</span>
+          </button>
+
+          <button 
             onClick={onOpenDashboard}
             className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all"
           >
             <span className="text-xl">📊</span>
-            <span className="text-xs font-black uppercase tracking-widest">Ver Meu Impacto Real</span>
+            <span className="text-xs font-black uppercase tracking-widest">Painel de Impacto</span>
           </button>
 
           {!user.isFaciallyVerified && (
@@ -113,6 +137,52 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
               <span className="text-xs font-black uppercase tracking-widest">Obter Selo Verificado</span>
             </button>
           )}
+        </div>
+
+        {/* Development & Public Info */}
+        <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
+           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Futuro da Plataforma</h3>
+           <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={onOpenRoadmap}
+                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
+              >
+                 <span className="text-xl">🗺️</span>
+                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Roadmap</p>
+                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">O que virá</p>
+              </button>
+              <button 
+                onClick={onOpenMonetizationInfo}
+                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
+              >
+                 <span className="text-xl">💰</span>
+                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Economia</p>
+                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Como lucramos</p>
+              </button>
+           </div>
+        </div>
+
+        {/* Ads & Manifesto Section */}
+        <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
+           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Ética e Ads</h3>
+           <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={onOpenAdControls}
+                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
+              >
+                 <span className="text-xl">🎯</span>
+                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Filtro Ads</p>
+                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Escolha ver</p>
+              </button>
+              <button 
+                onClick={onOpenManifesto}
+                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
+              >
+                 <span className="text-xl">📜</span>
+                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Manifesto</p>
+                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Nossos valores</p>
+              </button>
+           </div>
         </div>
 
         {/* Accessibility & Modes Toggle Section */}
@@ -127,17 +197,10 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
              </button>
            </div>
            
-           {showLiteHelp && (
-             <div className="bg-blue-600 p-4 rounded-xl animate-in slide-in-from-top-2 duration-300">
-                <h4 className="text-xs font-black text-white uppercase mb-1">Como ativar o modo otimizado?</h4>
-                <p className="text-[10px] text-white/80 leading-tight">O Modo Light remove animações pesadas e efeitos de desfoque, ideal para celulares Android com 2GB-4GB RAM.</p>
-             </div>
-           )}
-           
            <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-xs font-black uppercase tracking-widest">Modo Light (Otimizado)</h4>
-                <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Reduz consumo de bateria e melhora a fluidez.</p>
+                <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Reduz consumo visual.</p>
               </div>
               <button 
                 onClick={onToggleLite}
@@ -150,7 +213,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
            <div className="flex items-center justify-between border-t pt-4 border-zinc-100/10">
               <div>
                 <h4 className="text-xs font-black uppercase tracking-widest">Modo Escuro (Dark)</h4>
-                <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Melhora o contraste e reduz fadiga visual.</p>
+                <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Foco no conteúdo.</p>
               </div>
               <button 
                 onClick={onToggleDark}
@@ -163,12 +226,21 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
 
         {/* Buttons */}
         <div className="flex gap-2">
-          <button className={`flex-1 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors`}>Editar Perfil</button>
-          <button className={`flex-1 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors`}>Configurações</button>
+          <button 
+            onClick={() => setShowEditBio(true)}
+            className={`flex-1 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors active:scale-95`}
+          >
+            Editar Biografia
+          </button>
+          <button 
+            onClick={onOpenCreatorPlus}
+            className={`flex-1 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors active:scale-95 text-blue-500`}
+          >
+            {user.isPremium ? 'Gestão Criador+' : 'Assinar Criador+'}
+          </button>
         </div>
       </div>
 
-      {/* Grid Tabs */}
       <div className={`flex border-t ${borderClasses} mt-4`}>
         <button onClick={() => setTab('posts')} className={`flex-1 flex justify-center py-4 ${tab === 'posts' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-blue-600 text-blue-600'}` : 'text-zinc-400'}`}>
           <Icons.Home className="w-6 h-6" />
@@ -178,7 +250,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
         </button>
       </div>
 
-      {/* Photos Grid */}
       <div className="grid grid-cols-3 gap-0.5">
         {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className={`aspect-square ${isDark ? 'bg-zinc-900' : 'bg-zinc-200'} overflow-hidden relative group`}>
@@ -200,12 +271,19 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
       </div>
       <div className="h-24"></div>
 
-      {/* Modal Editar Foto */}
       {showEditPhoto && (
         <EditProfilePhoto 
           currentAvatar={user.avatar || 'assets/profile.png'} 
           onUpdate={handleAvatarUpdate} 
           onCancel={() => setShowEditPhoto(false)} 
+        />
+      )}
+
+      {showEditBio && (
+        <EditBio 
+          currentBio={user.bio || ""}
+          onUpdate={handleBioUpdate}
+          onCancel={() => setShowEditBio(false)}
         />
       )}
     </div>
