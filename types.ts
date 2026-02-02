@@ -1,15 +1,17 @@
 
-export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download';
+export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register';
 
 export interface User {
   id: string;
-  username: string;
+  username: string; // Este é o handle (@)
   displayName: string;
   avatar: string;
   bio?: string;
   followers: number;
   following: number;
   isVerified?: boolean;
+  email?: string;
+  phone?: string;
 }
 
 export interface Post {
