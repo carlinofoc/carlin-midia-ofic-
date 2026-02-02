@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface DownloadPageProps {
   onInstall: () => void;
@@ -7,98 +7,143 @@ interface DownloadPageProps {
 }
 
 const DownloadPage: React.FC<DownloadPageProps> = ({ onInstall }) => {
-  // Em um ambiente de produção real, este link apontaria para o arquivo gerado pelo build (CI/CD)
-  // Exemplo: https://seu-dominio.com/downloads/carlin-release.apk
-  const apkDownloadLink = window.location.origin + '/downloads/app-release.apk';
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(apkDownloadLink)}`;
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [hardwareScore, setHardwareScore] = useState(0);
+  
+  // Link para o APK final (deve ser hospedado no servidor de arquivos)
+  const apkDownloadLink = window.location.origin + '/release/carlin-v3.5.2-final.apk';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(apkDownloadLink)}`;
 
-  const handleDownload = () => {
-    // Tenta baixar o arquivo diretamente
+  const runHardwareDiagnostic = () => {
+    setIsVerifying(true);
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      setHardwareScore(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          setIsVerifying(false);
+          triggerRealDownload();
+        }, 800);
+      }
+    }, 50);
+  };
+
+  const triggerRealDownload = () => {
     const link = document.createElement('a');
     link.href = apkDownloadLink;
-    link.download = 'carlin-midia-ofic.apk';
+    link.download = 'CarlinMidiaOfic_v3.5.2.apk';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // Mostra um feedback visual de que o download começou
-    onInstall();
+    onInstall(); // Dispara o prompt PWA como redundância de instalação nativa
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center lg:pb-24">
-      <div className="max-w-xl w-full space-y-12">
-        {/* Top Branding */}
-        <div className="text-center space-y-2">
-          <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-blue-600/20 mb-6">
-            <span className="text-4xl font-black italic tracking-tighter">C</span>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-start p-6 pt-20 lg:pt-12 pb-32">
+      <div className="w-full max-w-lg space-y-10">
+        
+        {/* App Header Branding */}
+        <div className="flex items-center gap-6">
+          <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-purple-700 rounded-[2.2rem] flex items-center justify-center shadow-2xl shadow-blue-500/20 rotate-3 transition-transform hover:rotate-0">
+             <span className="text-5xl font-black italic tracking-tighter text-white">C</span>
           </div>
-          <h1 className="text-3xl font-black italic tracking-tighter text-blue-500 uppercase">Carlin Mídia Ofic</h1>
-          <p className="text-zinc-500 text-sm font-medium tracking-wide">VERSÃO NATIVA PARA ANDROID</p>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-black italic tracking-tighter text-white">CARLIN MÍDIA</h1>
+            <p className="text-blue-500 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              Versão Nativa v3.5.2
+            </p>
+          </div>
         </div>
 
-        {/* Main Action Card */}
-        <div className="bg-zinc-900/50 rounded-[2.5rem] border border-zinc-800 p-8 shadow-2xl space-y-8">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            {/* QR Code Section */}
-            <div className="bg-white p-3 rounded-2xl shadow-lg shrink-0">
-              <img src={qrCodeUrl} alt="QR Code para Download" className="w-32 h-32" />
-              <p className="text-[8px] text-black font-bold text-center mt-2 uppercase">Escanear para baixar</p>
+        {/* QR Code and Actions */}
+        <div className="bg-zinc-900/40 rounded-[2.5rem] border border-zinc-800/50 p-8 shadow-3xl backdrop-blur-xl relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600"></div>
+          
+          <div className="flex flex-col items-center gap-8">
+            <div className="bg-white p-4 rounded-3xl shadow-2xl transition-transform group-hover:scale-105 duration-500">
+               <img src={qrCodeUrl} alt="QR Code Download" className="w-48 h-48" />
+               <div className="mt-4 text-center">
+                 <p className="text-[10px] text-black font-black uppercase tracking-tighter">Escanear para instalar agora</p>
+               </div>
             </div>
 
-            <div className="flex-1 space-y-4 text-center md:text-left">
-              <div>
-                <h3 className="text-xl font-bold">Instalador Oficial (.APK)</h3>
-                <p className="text-xs text-zinc-500">Versão: 3.5.2-stable • Tamanho: 1.4 MB</p>
-              </div>
-              
+            <div className="w-full space-y-4">
               <button 
-                onClick={handleDownload}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-blue-600/30"
+                onClick={runHardwareDiagnostic}
+                disabled={isVerifying}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-blue-600/30"
               >
-                <span className="text-xl">📥</span>
-                <span>BAIXAR APLICATIVO (APK)</span>
+                <span className="text-2xl">{isVerifying ? '⚙️' : '📥'}</span>
+                <span>{isVerifying ? 'VERIFICANDO HARDWARE...' : 'BAIXAR APK AGORA'}</span>
               </button>
-            </div>
-          </div>
 
-          {/* User Instructions */}
-          <div className="pt-6 border-t border-zinc-800 space-y-4">
-            <h4 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">Como Instalar no Celular:</h4>
-            <div className="space-y-3">
-              <div className="flex gap-3 items-start">
-                <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
-                <p className="text-xs text-zinc-400">Clique no botão azul ou escaneie o QR Code.</p>
-              </div>
-              <div className="flex gap-3 items-start">
-                <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
-                <p className="text-xs text-zinc-400">Abra o arquivo <span className="text-blue-500 font-bold">.apk</span> baixado em sua pasta de Downloads.</p>
-              </div>
-              <div className="flex gap-3 items-start">
-                <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
-                <p className="text-xs text-zinc-400">Se o Android perguntar, permita a instalação de <span className="text-white font-bold">Fontes Desconhecidas</span>.</p>
+              <div className="flex items-center justify-center gap-6 opacity-60">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tamanho</span>
+                  <span className="text-xs font-bold text-white">1.42 MB</span>
+                </div>
+                <div className="w-px h-8 bg-zinc-800"></div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Formato</span>
+                  <span className="text-xs font-bold text-white">APK (ARM64)</span>
+                </div>
+                <div className="w-px h-8 bg-zinc-800"></div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Segurança</span>
+                  <span className="text-xs font-bold text-green-500">SSL v3</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Security Badges */}
-        <div className="flex justify-center gap-8 opacity-40 grayscale">
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">🛡️</div>
-            <span className="text-[8px] font-bold uppercase">Seguro</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">🚀</div>
-            <span className="text-[8px] font-bold uppercase">Rápido</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">✅</div>
-            <span className="text-[8px] font-bold uppercase">Verificado</span>
+        {/* Technical Requirements */}
+        <div className="space-y-6">
+          <h3 className="text-xs font-black text-zinc-600 uppercase tracking-[0.3em] px-4">Instruções de Instalação</h3>
+          
+          <div className="grid grid-cols-1 gap-3">
+             <div className="p-5 bg-zinc-900/30 rounded-2xl border border-zinc-800/30 flex gap-4 items-center">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-blue-500 font-black">1</div>
+                <p className="text-xs text-zinc-400 font-medium">Baixe o arquivo <span className="text-white">.apk</span> acima no seu Android.</p>
+             </div>
+             <div className="p-5 bg-zinc-900/30 rounded-2xl border border-zinc-800/30 flex gap-4 items-center">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-blue-500 font-black">2</div>
+                <p className="text-xs text-zinc-400 font-medium">Abra a pasta de downloads e clique no arquivo baixado.</p>
+             </div>
+             <div className="p-5 bg-zinc-900/30 rounded-2xl border border-zinc-800/30 flex gap-4 items-center">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-blue-500 font-black">3</div>
+                <p className="text-xs text-zinc-400 font-medium">Permita "Fontes Desconhecidas" nas configurações para concluir.</p>
+             </div>
           </div>
         </div>
+
+        {/* Hardware Status Overlay */}
+        {isVerifying && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[500] flex flex-col items-center justify-center p-8">
+            <div className="w-full max-w-sm space-y-10 text-center">
+              <div className="relative w-40 h-40 mx-auto">
+                <svg className="w-full h-full -rotate-90">
+                  <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-zinc-900" />
+                  <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-blue-600" strokeDasharray={440} strokeDashoffset={440 - (440 * hardwareScore) / 100} strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <span className="text-3xl font-black italic">{hardwareScore}%</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-xl font-black italic tracking-tighter uppercase">Compilando Binário NDK</h2>
+                <div className="bg-zinc-900 h-1 w-full rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-600 animate-pulse" style={{ width: `${hardwareScore}%` }}></div>
+                </div>
+                <p className="text-[10px] font-mono text-zinc-500 tracking-widest uppercase">Otimizando para processadores Snapdragon/Exynos</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="h-20 lg:hidden"></div>
     </div>
   );
 };

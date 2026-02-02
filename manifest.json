@@ -2,7 +2,7 @@
 {
   "short_name": "CarlinMídia",
   "name": "Carlin Mídia Oficial",
-  "description": "Rede Social Carlin Mídia Oficial - Versão Instalável",
+  "description": "Rede Social Carlin Mídia Oficial - Aplicativo Nativo Instalável",
   "icons": [
     {
       "src": "https://picsum.photos/seed/carlin_app/192/192",
@@ -18,8 +18,23 @@
   ],
   "start_url": "./index.html",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "theme_color": "#000000",
   "background_color": "#000000",
   "orientation": "portrait",
-  "categories": ["social", "entertainment"]
+  "categories": ["social", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "Novo Post",
+      "short_name": "Criar",
+      "url": "/?view=create",
+      "icons": [{ "src": "https://picsum.photos/seed/plus/192/192", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mensagens",
+      "short_name": "Direct",
+      "url": "/?view=messages",
+      "icons": [{ "src": "https://picsum.photos/seed/msg/192/192", "sizes": "192x192" }]
+    }
+  ]
 }
