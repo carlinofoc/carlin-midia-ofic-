@@ -22,11 +22,14 @@ interface ProfileProps {
   onOpenCreatorPlus: () => void;
   onOpenRoadmap: () => void;
   onOpenMonetizationInfo: () => void;
+  onOpenNotificationSettings: () => void;
+  onOpenDeveloperInfo: () => void;
+  onOpenDeveloperManifesto: () => void;
 }
 
 const Profile: React.FC<ProfileProps> = ({ 
   user, onOpenTerms, onOpenPrivacy, isLite, onToggleLite, isDark, onToggleDark, 
-  onOpenDashboard, onOpenVerification, onUpdateUser, onOpenAdControls, onOpenManifesto, onOpenBetaCenter, onOpenCreatorPlus, onOpenRoadmap, onOpenMonetizationInfo 
+  onOpenDashboard, onOpenVerification, onUpdateUser, onOpenAdControls, onOpenManifesto, onOpenBetaCenter, onOpenCreatorPlus, onOpenRoadmap, onOpenMonetizationInfo, onOpenNotificationSettings, onOpenDeveloperInfo, onOpenDeveloperManifesto
 }) => {
   const [tab, setTab] = useState<'posts' | 'saved' | 'tagged'>('posts');
   const [showLiteHelp, setShowLiteHelp] = useState(false);
@@ -141,8 +144,16 @@ const Profile: React.FC<ProfileProps> = ({
 
         {/* Development & Public Info */}
         <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
-           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Futuro da Plataforma</h3>
+           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Configurações & Futuro</h3>
            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={onOpenNotificationSettings}
+                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
+              >
+                 <span className="text-xl">🔔</span>
+                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Notificações</p>
+                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Sua Atenção</p>
+              </button>
               <button 
                 onClick={onOpenRoadmap}
                 className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
@@ -151,13 +162,39 @@ const Profile: React.FC<ProfileProps> = ({
                  <p className="text-[9px] font-black uppercase tracking-widest leading-none">Roadmap</p>
                  <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">O que virá</p>
               </button>
+           </div>
+        </div>
+
+        {/* New Bastidores Section */}
+        <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
+           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Sobre o Aplicativo</h3>
+           <div className="space-y-3">
               <button 
-                onClick={onOpenMonetizationInfo}
-                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
+                onClick={onOpenDeveloperInfo}
+                className={`w-full p-6 rounded-[2rem] border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex items-center justify-between group hover:border-blue-500/30 transition-all shadow-xl`}
               >
-                 <span className="text-xl">💰</span>
-                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Economia</p>
-                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Como lucramos</p>
+                 <div className="flex items-center gap-4">
+                    <span className="text-2xl group-hover:scale-110 transition-transform">👨‍💻</span>
+                    <div className="text-left">
+                       <p className="text-[9px] font-black uppercase tracking-widest leading-none text-white">Bastidores do Carlin</p>
+                       <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter mt-1">Conheça o Desenvolvedor</p>
+                    </div>
+                 </div>
+                 <svg className="w-5 h-5 text-zinc-600 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+              </button>
+
+              <button 
+                onClick={onOpenDeveloperManifesto}
+                className={`w-full p-6 rounded-[2rem] border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex items-center justify-between group hover:border-blue-500/30 transition-all shadow-xl`}
+              >
+                 <div className="flex items-center gap-4">
+                    <span className="text-2xl group-hover:scale-110 transition-transform">📜</span>
+                    <div className="text-left">
+                       <p className="text-[9px] font-black uppercase tracking-widest leading-none text-white">Nosso Manifesto</p>
+                       <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter mt-1">Ética e Valores Solo</p>
+                    </div>
+                 </div>
+                 <svg className="w-5 h-5 text-zinc-600 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
               </button>
            </div>
         </div>
@@ -179,8 +216,8 @@ const Profile: React.FC<ProfileProps> = ({
                 className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
               >
                  <span className="text-xl">📜</span>
-                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Manifesto</p>
-                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Nossos valores</p>
+                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Estratégia</p>
+                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Monetização Justa</p>
               </button>
            </div>
         </div>

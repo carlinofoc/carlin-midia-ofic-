@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, User, Post, Story, FeedMode, FeedFormatPreference, FeedItem, Ad, AdCategoryConfig } from './types';
+import { View, User, Post, Story, FeedMode, FeedFormatPreference, FeedItem, Ad, AdCategoryConfig, NotificationPrefs } from './types';
 import { Icons } from './constants';
 import Feed from './components/Feed';
 import Explore from './components/Explore';
@@ -27,6 +27,9 @@ import Roadmap from './components/Roadmap';
 import CreatorPlusFAQ from './components/CreatorPlusFAQ';
 import MonetizationInfo from './components/MonetizationInfo';
 import CancelSubscription from './components/CancelSubscription';
+import NotificationSettings from './components/NotificationSettings';
+import DeveloperInfo from './components/DeveloperInfo';
+import DeveloperManifesto from './components/DeveloperManifesto';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
@@ -178,6 +181,18 @@ const App: React.FC = () => {
 
   const handlePostCreated = (newPost: Post) => {
     setFeedItems([newPost, ...feedItems]);
+    
+    // Trigger "First Post" or "Consistency"
+    const event = new CustomEvent('carlin-notification', {
+        detail: {
+            id: 'post_created',
+            type: 'performance',
+            title: 'Sua Voz no Carlin 🎙️',
+            message: 'Seu conteúdo foi compartilhado. O valor real começa com sua primeira voz.',
+            icon: <div className="bg-blue-600 p-2 rounded-lg text-white">✨</div>
+        }
+    });
+    window.dispatchEvent(event);
   };
 
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
@@ -202,6 +217,12 @@ const App: React.FC = () => {
     localStorage.setItem('carlin_user', JSON.stringify(updatedUser));
   };
 
+  const handleUpdateNotificationPrefs = (newPrefs: NotificationPrefs) => {
+    if (currentUser) {
+        handleUpdateUser({ ...currentUser, notificationPrefs: newPrefs });
+    }
+  };
+
   const handleUpdateAdConfig = (newConfig: AdCategoryConfig) => {
     setAdConfig(newConfig);
   };
@@ -218,6 +239,17 @@ const App: React.FC = () => {
     const updated = { ...currentUser, isPremium: false };
     handleUpdateUser(updated);
     setCurrentView('profile');
+    
+    const event = new CustomEvent('carlin-notification', {
+        detail: {
+          id: 'cancel_confirm',
+          type: 'security',
+          title: 'Assinatura cancelada com sucesso.',
+          message: 'Você continuará com acesso aos benefícios até o final do ciclo atual.',
+          icon: <div className="bg-zinc-700 p-2 rounded-lg text-white">🕊️</div>
+        }
+    });
+    window.dispatchEvent(event);
   };
 
   const userHasPosted = feedItems.some(p => 'userId' in p && (p.userId === 'me' || p.userId === currentUser?.id));
@@ -265,13 +297,40 @@ const App: React.FC = () => {
           onOpenDashboard={() => setCurrentView('dashboard')} onOpenVerification={() => setCurrentView('verification')} onUpdateUser={handleUpdateUser}
           onOpenAdControls={() => setCurrentView('ad_controls')} onOpenManifesto={() => setCurrentView('monetization_manifesto')} onOpenBetaCenter={() => setCurrentView('beta_center')}
           onOpenCreatorPlus={() => setCurrentView('creator_plus')} onOpenRoadmap={() => setCurrentView('roadmap')} onOpenMonetizationInfo={() => setCurrentView('monetization_info')}
+          onOpenNotificationSettings={() => setCurrentView('notification_settings')}
+          onOpenDeveloperInfo={() => setCurrentView('developer_info')}
+          onOpenDeveloperManifesto={() => setCurrentView('developer_manifesto')}
         />
       );
-      case 'roadmap': return <Roadmap onBack={() => setCurrentView('profile')} />;
+      case 'developer_info': return (
+        <DeveloperInfo 
+          onBack={() => setCurrentView('profile')} 
+          onOpenRoadmap={() => setCurrentView('roadmap')} 
+        />
+      );
+      case 'developer_manifesto': return (
+        <DeveloperManifesto onBack={() => setCurrentView('profile')} />
+      );
+      case 'notification_settings': return (
+        <NotificationSettings 
+            user={currentUser!} 
+            onUpdate={handleUpdateNotificationPrefs} 
+            onBack={() => setCurrentView('profile')} 
+        />
+      );
+      case 'dashboard': return (
+        <Dashboard 
+          user={currentUser!}
+          posts={feedItems.filter(p => 'userId' in p && (p.userId === 'me' || p.userId === currentUser?.id)) as Post[]} 
+          onBack={() => setCurrentView('profile')}
+          onOpenRoadmap={() => setCurrentView('roadmap')}
+        />
+      );
+      case 'roadmap': return <Roadmap onBack={() => setCurrentView('dashboard')} />;
       case 'monetization_info': return <MonetizationInfo onBack={() => setCurrentView('profile')} />;
       case 'creator_plus': return (
         <CreatorPlus 
-          user={currentUser} 
+          user={currentUser!} 
           onSubscribe={handleSubscribeCreatorPlus} 
           onBack={() => setCurrentView('profile')} 
           onOpenFAQ={() => setCurrentView('creator_plus_faq')}
@@ -280,11 +339,10 @@ const App: React.FC = () => {
       );
       case 'creator_plus_faq': return <CreatorPlusFAQ onBack={() => setCurrentView('creator_plus')} />;
       case 'cancel_subscription': return <CancelSubscription onConfirm={handleCancelCreatorPlus} onBack={() => setCurrentView('creator_plus')} />;
-      case 'beta_center': return <BetaCenter user={currentUser} onUpdateUser={handleUpdateUser} onBack={() => setCurrentView('profile')} onOpenTerms={() => setCurrentView('beta_terms')} />;
+      case 'beta_center': return <BetaCenter user={currentUser!} onUpdateUser={handleUpdateUser} onBack={() => setCurrentView('profile')} onOpenTerms={() => setCurrentView('beta_terms')} />;
       case 'beta_terms': return <BetaTerms onClose={() => setCurrentView('beta_center')} />;
       case 'ad_controls': return <AdControlPanel config={adConfig} onUpdate={handleUpdateAdConfig} onBack={() => setCurrentView('profile')} />;
       case 'monetization_manifesto': return <MonetizationManifesto onBack={() => setCurrentView('profile')} />;
-      case 'dashboard': return <Dashboard posts={feedItems.filter(p => 'userId' in p && (p.userId === 'me' || p.userId === currentUser?.id)) as Post[]} onBack={() => setCurrentView('profile')} />;
       case 'verification': return <VerificationProcess onComplete={handleVerificationComplete} onCancel={() => setCurrentView('profile')} onOpenPolicy={() => setCurrentView('biometric_policy')} />;
       case 'biometric_policy': return <BiometricPolicy onClose={() => setCurrentView('verification')} />;
       case 'create': return <CreatePost onPostCreated={handlePostCreated} onCancel={() => setCurrentView('feed')} />;
@@ -312,7 +370,7 @@ const App: React.FC = () => {
         </nav>
       )}
 
-      {currentUser && !['terms', 'privacy', 'download', 'create', 'verification', 'biometric_policy', 'ad_controls', 'monetization_manifesto', 'beta_center', 'creator_plus', 'beta_terms', 'roadmap', 'creator_plus_faq', 'monetization_info', 'cancel_subscription'].includes(currentView) && (
+      {currentUser && !['terms', 'privacy', 'download', 'create', 'verification', 'biometric_policy', 'ad_controls', 'monetization_manifesto', 'beta_center', 'creator_plus', 'beta_terms', 'roadmap', 'creator_plus_faq', 'monetization_info', 'cancel_subscription', 'notification_settings', 'developer_info', 'developer_manifesto'].includes(currentView) && (
         <header className={`lg:hidden fixed top-0 w-full ${darkMode ? 'bg-black/95 border-zinc-900' : 'bg-white/95 border-zinc-200'} border-b z-[100] flex items-center justify-between px-6 h-14 backdrop-blur-md`}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center overflow-hidden border border-zinc-800">

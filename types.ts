@@ -1,7 +1,14 @@
 
-export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register' | 'dashboard' | 'verification' | 'biometric_policy' | 'ad_controls' | 'monetization_manifesto' | 'beta_center' | 'creator_plus' | 'beta_terms' | 'roadmap' | 'creator_plus_faq' | 'monetization_info' | 'cancel_subscription';
+export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register' | 'dashboard' | 'verification' | 'biometric_policy' | 'ad_controls' | 'monetization_manifesto' | 'beta_center' | 'creator_plus' | 'beta_terms' | 'roadmap' | 'creator_plus_faq' | 'monetization_info' | 'cancel_subscription' | 'notification_settings' | 'developer_info' | 'developer_manifesto';
 export type FeedMode = 'followers' | 'discovery' | 'relevance';
 export type FeedFormatPreference = 'posts' | 'videos' | 'balanced';
+
+export interface NotificationPrefs {
+  performance: boolean;
+  educational: boolean;
+  security: boolean;
+  community: boolean;
+}
 
 export interface AdCategoryConfig {
   education: boolean;
@@ -55,6 +62,7 @@ export interface User {
   email?: string;
   phone?: string;
   adSettings?: AdCategoryConfig;
+  notificationPrefs?: NotificationPrefs;
 }
 
 export interface PostStats {
