@@ -11,6 +11,7 @@ import CreatePost from './components/CreatePost';
 import Stories from './components/Stories';
 import TermsOfUse from './components/TermsOfUse';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import DownloadPage from './components/DownloadPage';
 
 const MOCK_USER: User = {
   id: 'me',
@@ -111,6 +112,7 @@ const App: React.FC = () => {
       case 'messages': return <Messages />;
       case 'profile': return <Profile user={MOCK_USER} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} />;
       case 'create': return <CreatePost onPostCreated={(p) => setPosts([p, ...posts])} onCancel={() => setCurrentView('feed')} />;
+      case 'download': return <DownloadPage />;
       case 'terms':
       case 'privacy':
         return (
@@ -156,7 +158,16 @@ const App: React.FC = () => {
           <NavButton icon={<Icons.Plus className="w-6 h-6" />} label="Criar" active={currentView === 'create'} onClick={() => setCurrentView('create')} />
           <NavButton icon={<Icons.User className="w-6 h-6" />} label="Perfil" active={['profile', 'terms', 'privacy'].includes(currentView)} onClick={() => setCurrentView('profile')} />
           
-          <div className="mt-auto">
+          <div className="mt-auto space-y-2">
+            <button 
+              onClick={() => setCurrentView('download')}
+              className={`flex items-center gap-4 p-4 rounded-xl transition-colors w-full group ${currentView === 'download' ? 'bg-blue-600/10 text-blue-500' : 'hover:bg-zinc-900 text-zinc-400'}`}
+            >
+              <div className="w-6 h-6">
+                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              </div>
+              <span className="font-bold">Baixar App</span>
+            </button>
             <button className="flex items-center gap-4 p-4 hover:bg-zinc-900 rounded-xl transition-colors w-full group">
               <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700">
                 <Icons.Verified className="w-4 h-4 text-zinc-500" />
@@ -167,10 +178,13 @@ const App: React.FC = () => {
         </nav>
       )}
 
-      {hasAcceptedTerms && currentView !== 'reels' && !['terms', 'privacy'].includes(currentView) && (
+      {hasAcceptedTerms && currentView !== 'reels' && !['terms', 'privacy', 'download'].includes(currentView) && (
         <header className="lg:hidden fixed top-0 w-full bg-black/80 backdrop-blur-md border-b border-zinc-800 z-50 flex items-center justify-between px-4 h-14">
           <h1 className="text-xl font-black italic tracking-tighter text-blue-500">CARLIN</h1>
           <div className="flex items-center gap-4">
+            <button onClick={() => setCurrentView('download')} className="text-zinc-400 hover:text-white">
+               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            </button>
             <button onClick={() => setCurrentView('messages')}><Icons.Message className="w-6 h-6" /></button>
           </div>
         </header>
@@ -186,7 +200,7 @@ const App: React.FC = () => {
           <button onClick={() => setCurrentView('explore')} className={`p-2 ${currentView === 'explore' ? 'text-white' : 'text-zinc-500'}`}><Icons.Search className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('create')} className={`p-2 ${currentView === 'create' ? 'text-white' : 'text-zinc-500'}`}><Icons.Plus className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('reels')} className={`p-2 ${currentView === 'reels' ? 'text-white' : 'text-zinc-500'}`}><Icons.Play className="w-7 h-7" /></button>
-          <button onClick={() => setCurrentView('profile')} className={`p-2 ${['profile', 'terms', 'privacy'].includes(currentView) ? 'text-white' : 'text-zinc-500'}`}><Icons.User className="w-7 h-7" /></button>
+          <button onClick={() => setCurrentView('profile')} className={`p-2 ${['profile', 'terms', 'privacy', 'download'].includes(currentView) ? 'text-white' : 'text-zinc-500'}`}><Icons.User className="w-7 h-7" /></button>
         </nav>
       )}
     </div>
