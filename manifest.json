@@ -1,0 +1,25 @@
+
+{
+  "short_name": "Carlin",
+  "name": "Carlin Mídia Ofic",
+  "description": "A rede social do futuro.",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/carlin_icon/192/192",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://picsum.photos/seed/carlin_icon/512/512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "orientation": "portrait",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"]
+}

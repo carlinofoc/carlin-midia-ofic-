@@ -29,11 +29,18 @@ const App: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [legalTab, setLegalTab] = useState<'terms' | 'privacy'>('terms');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState<boolean>(() => {
     return localStorage.getItem('carlin_terms_accepted') === 'true';
   });
   
   useEffect(() => {
+    // Listen for the beforeinstallprompt event for Android APK simulation
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+
     const initialPosts: Post[] = Array.from({ length: 10 }).map((_, i) => ({
       id: `post-${i}`,
       userId: `user-${i}`,
@@ -63,6 +70,19 @@ const App: React.FC = () => {
     localStorage.setItem('carlin_terms_accepted', 'true');
     setHasAcceptedTerms(true);
     setCurrentView('feed');
+  };
+
+  const triggerInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('Usuário aceitou a instalação');
+      }
+      setDeferredPrompt(null);
+    } else {
+      alert("Para instalar no Android: Clique nos 3 pontinhos do navegador e selecione 'Instalar Aplicativo'.");
+    }
   };
 
   const renderView = () => {
@@ -112,7 +132,7 @@ const App: React.FC = () => {
       case 'messages': return <Messages />;
       case 'profile': return <Profile user={MOCK_USER} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} />;
       case 'create': return <CreatePost onPostCreated={(p) => setPosts([p, ...posts])} onCancel={() => setCurrentView('feed')} />;
-      case 'download': return <DownloadPage />;
+      case 'download': return <DownloadPage onInstall={triggerInstall} canInstall={!!deferredPrompt} />;
       case 'terms':
       case 'privacy':
         return (
@@ -156,7 +176,7 @@ const App: React.FC = () => {
           <NavButton icon={<Icons.Play className="w-6 h-6" />} label="Reels" active={currentView === 'reels'} onClick={() => setCurrentView('reels')} />
           <NavButton icon={<Icons.Message className="w-6 h-6" />} label="Mensagens" active={currentView === 'messages'} onClick={() => setCurrentView('messages')} />
           <NavButton icon={<Icons.Plus className="w-6 h-6" />} label="Criar" active={currentView === 'create'} onClick={() => setCurrentView('create')} />
-          <NavButton icon={<Icons.User className="w-6 h-6" />} label="Perfil" active={['profile', 'terms', 'privacy'].includes(currentView)} onClick={() => setCurrentView('profile')} />
+          <NavButton icon={<Icons.User className="w-6 h-6" />} label="Perfil" active={['profile', 'terms', 'privacy', 'download'].includes(currentView)} onClick={() => setCurrentView('profile')} />
           
           <div className="mt-auto space-y-2">
             <button 
