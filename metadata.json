@@ -1,0 +1,8 @@
+{
+  "name": "Carlin Mídia Ofic",
+  "description": "A high-fidelity social media platform featuring an infinite feed, full-screen reels, stories, and mandatory Terms of Use integration.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
