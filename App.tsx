@@ -186,6 +186,11 @@ const App: React.FC = () => {
     setCurrentView('profile');
   };
 
+  const handleUpdateUser = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('carlin_user', JSON.stringify(updatedUser));
+  };
+
   const userHasPosted = posts.some(p => p.userId === 'me' || p.userId === currentUser?.id);
 
   const filteredPosts = posts.filter(post => {
@@ -244,6 +249,7 @@ const App: React.FC = () => {
           onToggleDark={() => setDarkMode(!darkMode)}
           onOpenDashboard={() => setCurrentView('dashboard')}
           onOpenVerification={() => setCurrentView('verification')}
+          onUpdateUser={handleUpdateUser}
         />
       );
       case 'dashboard': return (

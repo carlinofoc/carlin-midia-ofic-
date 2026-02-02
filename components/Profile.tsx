@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { Icons } from '../constants';
+import EditProfilePhoto from './EditProfilePhoto';
 
 interface ProfileProps {
   user: User;
@@ -13,29 +14,39 @@ interface ProfileProps {
   onToggleDark: () => void;
   onOpenDashboard: () => void;
   onOpenVerification: () => void;
+  onUpdateUser: (updatedUser: User) => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isLite, onToggleLite, isDark, onToggleDark, onOpenDashboard, onOpenVerification }) => {
+const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isLite, onToggleLite, isDark, onToggleDark, onOpenDashboard, onOpenVerification, onUpdateUser }) => {
   const [tab, setTab] = useState<'posts' | 'saved' | 'tagged'>('posts');
   const [showLiteHelp, setShowLiteHelp] = useState(false);
+  const [showEditPhoto, setShowEditPhoto] = useState(false);
 
   const containerClasses = isDark ? "bg-black text-white" : "bg-zinc-50 text-zinc-900";
   const cardClasses = isDark ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-sm";
   const borderClasses = isDark ? "border-zinc-900" : "border-zinc-200";
+
+  const handleAvatarUpdate = (newAvatar: string) => {
+    onUpdateUser({ ...user, avatar: newAvatar });
+    setShowEditPhoto(false);
+  };
 
   return (
     <div className={`w-full max-w-2xl mx-auto pt-14 lg:pt-8 ${containerClasses} min-h-screen transition-colors`}>
       {/* Header Info */}
       <div className="px-5 py-6 space-y-6">
         <div className="flex items-center justify-between gap-6">
-          <div className="relative">
+          <div className="relative group cursor-pointer" onClick={() => setShowEditPhoto(true)}>
             <div className={`w-24 h-24 md:w-32 md:h-32 rounded-full p-[3px] ${isLite ? 'bg-zinc-800' : 'bg-gradient-to-tr from-blue-600 to-blue-400'}`}>
-              <div className={`w-full h-full rounded-full ${isDark ? 'bg-black' : 'bg-white'} overflow-hidden border-2 ${isDark ? 'border-black' : 'border-white'}`}>
+              <div className={`w-full h-full rounded-full ${isDark ? 'bg-black' : 'bg-white'} overflow-hidden border-2 ${isDark ? 'border-black' : 'border-white'} relative`}>
                 <img 
                   src={user.avatar || 'assets/profile.png'} 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover group-hover:opacity-70 transition-opacity"
                   alt={`Avatar de ${user.displayName}`}
                 />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                  <span className="text-[10px] font-black text-white uppercase tracking-tighter">Editar</span>
+                </div>
               </div>
             </div>
             {user.isFaciallyVerified && (
@@ -188,6 +199,15 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy, isL
         <p className={`text-[9px] ${isDark ? 'text-zinc-800' : 'text-zinc-300'} uppercase tracking-[0.3em]`}>Carlin Mídia Oficial • v4.1 {isLite ? 'Lite' : 'Nativo'}</p>
       </div>
       <div className="h-24"></div>
+
+      {/* Modal Editar Foto */}
+      {showEditPhoto && (
+        <EditProfilePhoto 
+          currentAvatar={user.avatar || 'assets/profile.png'} 
+          onUpdate={handleAvatarUpdate} 
+          onCancel={() => setShowEditPhoto(false)} 
+        />
+      )}
     </div>
   );
 };
