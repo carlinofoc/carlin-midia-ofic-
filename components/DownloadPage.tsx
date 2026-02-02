@@ -1,152 +1,103 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 interface DownloadPageProps {
   onInstall: () => void;
   canInstall: boolean;
 }
 
-const DownloadPage: React.FC<DownloadPageProps> = ({ onInstall, canInstall }) => {
-  const [isCompiling, setIsCompiling] = useState(false);
-  const [buildStep, setBuildStep] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
+const DownloadPage: React.FC<DownloadPageProps> = ({ onInstall }) => {
+  // Em um ambiente de produção real, este link apontaria para o arquivo gerado pelo build (CI/CD)
+  // Exemplo: https://seu-dominio.com/downloads/carlin-release.apk
+  const apkDownloadLink = window.location.origin + '/downloads/app-release.apk';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(apkDownloadLink)}`;
 
-  const buildSteps = [
-    { label: "Iniciando Daemon Gradle...", delay: 800 },
-    { label: "Analisando projeto :app...", delay: 600 },
-    { label: "Compilando recursos nativos (C++)...", delay: 1200 },
-    { label: "Processando AndroidManifest.xml...", delay: 500 },
-    { label: "Gerando classes DEX (bytecode)...", delay: 1500 },
-    { label: "Assinando APK com V2 Signature...", delay: 700 },
-    { label: "Build concluído: app-release.apk", delay: 400 },
-  ];
-
-  const handleBuild = () => {
-    setIsCompiling(true);
-    setLogs([]);
-    let stepIndex = 0;
-
-    const processStep = () => {
-      if (stepIndex < buildSteps.length) {
-        setLogs(prev => [...prev, `> ${buildSteps[stepIndex].label}`]);
-        setBuildStep(Math.round(((stepIndex + 1) / buildSteps.length) * 100));
-        setTimeout(processStep, buildSteps[stepIndex].delay);
-        stepIndex++;
-      } else {
-        setTimeout(() => {
-          setIsCompiling(false);
-          // O "Download" real em ambiente web para se tornar "App" é a instalação PWA
-          // Para APK real binário, o usuário precisaria do ambiente local Gradle.
-          // Aqui fornecemos a ponte de instalação imediata.
-          onInstall();
-        }, 800);
-      }
-    };
-
-    processStep();
+  const handleDownload = () => {
+    // Tenta baixar o arquivo diretamente
+    const link = document.createElement('a');
+    link.href = apkDownloadLink;
+    link.download = 'carlin-midia-ofic.apk';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mostra um feedback visual de que o download começou
+    onInstall();
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center lg:pb-12">
-      <div className="max-w-2xl w-full space-y-10">
-        {/* Header Section */}
-        <div className="text-center space-y-4">
-          <div className="inline-block p-4 rounded-[2rem] bg-blue-600/10 border border-blue-500/20 mb-2">
-            <h1 className="text-4xl lg:text-6xl font-black italic tracking-tighter text-blue-500">CARLIN BUILD</h1>
+    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center lg:pb-24">
+      <div className="max-w-xl w-full space-y-12">
+        {/* Top Branding */}
+        <div className="text-center space-y-2">
+          <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-blue-600/20 mb-6">
+            <span className="text-4xl font-black italic tracking-tighter">C</span>
           </div>
-          <h2 className="text-3xl font-bold">Download Oficial do Aplicativo</h2>
-          <p className="text-zinc-500 text-sm max-w-sm mx-auto">
-            Versão de release otimizada para Android. Instalação direta via Native Bridge Technology.
-          </p>
+          <h1 className="text-3xl font-black italic tracking-tighter text-blue-500 uppercase">Carlin Mídia Ofic</h1>
+          <p className="text-zinc-500 text-sm font-medium tracking-wide">VERSÃO NATIVA PARA ANDROID</p>
         </div>
 
-        {/* APK Card */}
-        <div className="bg-zinc-900 rounded-[2.5rem] border border-zinc-800 p-8 shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-[100px]"></div>
-          
-          <div className="flex flex-col md:flex-row gap-8 items-center">
-            <div className="w-40 h-40 bg-white p-2 rounded-3xl shadow-xl flex items-center justify-center rotate-3 group-hover:rotate-0 transition-all duration-500">
-               <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://carlin-midia-ofic.app" alt="QR Link" className="w-full h-full" />
+        {/* Main Action Card */}
+        <div className="bg-zinc-900/50 rounded-[2.5rem] border border-zinc-800 p-8 shadow-2xl space-y-8">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            {/* QR Code Section */}
+            <div className="bg-white p-3 rounded-2xl shadow-lg shrink-0">
+              <img src={qrCodeUrl} alt="QR Code para Download" className="w-32 h-32" />
+              <p className="text-[8px] text-black font-bold text-center mt-2 uppercase">Escanear para baixar</p>
             </div>
 
-            <div className="flex-1 space-y-6">
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em]">Android Bundle</p>
-                <h3 className="text-2xl font-black italic">app-release.apk</h3>
-                <div className="flex gap-3 text-[10px] text-zinc-500 font-mono uppercase tracking-widest">
-                  <span>ARM64-v8a</span>
-                  <span>v3.5.2</span>
-                  <span>1.42 MB</span>
-                </div>
+            <div className="flex-1 space-y-4 text-center md:text-left">
+              <div>
+                <h3 className="text-xl font-bold">Instalador Oficial (.APK)</h3>
+                <p className="text-xs text-zinc-500">Versão: 3.5.2-stable • Tamanho: 1.4 MB</p>
               </div>
-
+              
               <button 
-                onClick={handleBuild}
-                disabled={isCompiling}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
+                onClick={handleDownload}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-blue-600/30"
               >
-                <div className="text-2xl">🤖</div>
-                <span>BAIXAR E INSTALAR APK</span>
+                <span className="text-xl">📥</span>
+                <span>BAIXAR APLICATIVO (APK)</span>
               </button>
+            </div>
+          </div>
 
-              <p className="text-[10px] text-zinc-600 leading-relaxed">
-                Este arquivo é o binário real do aplicativo. Certifique-se de permitir "Fontes Desconhecidas" nas configurações do seu Android para concluir a instalação manual.
-              </p>
+          {/* User Instructions */}
+          <div className="pt-6 border-t border-zinc-800 space-y-4">
+            <h4 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">Como Instalar no Celular:</h4>
+            <div className="space-y-3">
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                <p className="text-xs text-zinc-400">Clique no botão azul ou escaneie o QR Code.</p>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                <p className="text-xs text-zinc-400">Abra o arquivo <span className="text-blue-500 font-bold">.apk</span> baixado em sua pasta de Downloads.</p>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                <p className="text-xs text-zinc-400">Se o Android perguntar, permita a instalação de <span className="text-white font-bold">Fontes Desconhecidas</span>.</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Technical Logs simulation or Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <div className="p-6 bg-zinc-900/50 rounded-2xl border border-zinc-800">
-             <h4 className="text-xs font-bold text-zinc-400 mb-3 uppercase tracking-widest">Configuração do APK</h4>
-             <ul className="text-[11px] text-zinc-500 space-y-2 font-mono">
-               <li>Package: com.carlin.midia.ofic</li>
-               <li>Min SDK: 21 (Android 5.0)</li>
-               <li>Target SDK: 33 (Android 13)</li>
-               <li>Build: Release Signed (V2)</li>
-             </ul>
-           </div>
-           <div className="p-6 bg-zinc-900/50 rounded-2xl border border-zinc-800">
-             <h4 className="text-xs font-bold text-zinc-400 mb-3 uppercase tracking-widest">Suporte Nativo</h4>
-             <p className="text-[11px] text-zinc-500 leading-relaxed">
-               Desenvolvido com arquitetura modular. Acesso total a Câmera, GPS e Notificações Push via Android System Services.
-             </p>
-           </div>
+        {/* Security Badges */}
+        <div className="flex justify-center gap-8 opacity-40 grayscale">
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">🛡️</div>
+            <span className="text-[8px] font-bold uppercase">Seguro</span>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">🚀</div>
+            <span className="text-[8px] font-bold uppercase">Rápido</span>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">✅</div>
+            <span className="text-[8px] font-bold uppercase">Verificado</span>
+          </div>
         </div>
       </div>
-
-      {isCompiling && (
-        <div className="fixed inset-0 bg-black/95 z-[1000] flex flex-col items-center justify-center p-6 space-y-8">
-           <div className="w-full max-w-md bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden">
-             <div className="bg-zinc-800 px-4 py-2 flex items-center justify-between">
-                <div className="flex gap-1.5">
-                   <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-500">build_android_apk.sh</span>
-             </div>
-             <div className="p-6 space-y-6">
-                <div className="flex justify-between items-end">
-                  <span className="font-bold text-blue-500 animate-pulse">Gerando APK...</span>
-                  <span className="font-mono text-xs">{buildStep}%</span>
-                </div>
-                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                   <div 
-                     className="h-full bg-blue-500 transition-all duration-500"
-                     style={{ width: `${buildStep}%` }}
-                   ></div>
-                </div>
-                <div className="bg-black/50 p-4 rounded-xl h-40 overflow-y-auto font-mono text-[10px] text-green-500/80 space-y-1 hide-scrollbar shadow-inner">
-                   {logs.map((log, i) => <div key={i}>{log}</div>)}
-                   <div className="animate-pulse">_</div>
-                </div>
-             </div>
-           </div>
-        </div>
-      )}
-
       <div className="h-20 lg:hidden"></div>
     </div>
   );

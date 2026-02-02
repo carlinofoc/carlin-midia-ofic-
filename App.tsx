@@ -28,34 +28,26 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState<boolean>(() => {
     return localStorage.getItem('carlin_terms_accepted') === 'true';
   });
   
   useEffect(() => {
-    // Escuta o evento de instalação do sistema (Simulando o download do APK real no Android)
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      console.log('Build de APK disponível para instalação via Native Bridge.');
-    });
-
-    // Mock Data
+    // Mock Data initialization
     const initialPosts: Post[] = Array.from({ length: 15 }).map((_, i) => ({
       id: `post-${i}`,
       userId: `user-${i}`,
       username: `criador_${i + 1}`,
       userAvatar: `https://picsum.photos/seed/avatar-${i}/100/100`,
       content: i % 3 === 0 
-        ? "Novas atualizações no app! Baixe agora o APK oficial e tenha acesso a todas as funcionalidades exclusivas. #APK #Android" 
-        : "Capturando momentos únicos com a Carlin Mídia. #SocialMedia #Style",
+        ? "Acabei de atualizar o app! O novo APK está incrível e muito mais rápido. Recomendo baixar! ⚡️ #Update #Android" 
+        : "Capturando a essência do momento. Carlin Mídia Ofic. ✨ #Vibe #Social",
       media: [`https://picsum.photos/seed/post-img-${i}/1080/1350`],
       type: 'image',
       likes: Math.floor(Math.random() * 85000),
       comments: Math.floor(Math.random() * 1200),
-      timestamp: `${i + 1}h ago`,
-      location: i % 4 === 0 ? "São Paulo, Brazil" : undefined
+      timestamp: `${i + 1}h atrás`,
+      location: i % 4 === 0 ? "São Paulo, Brasil" : undefined
     }));
     setPosts(initialPosts);
 
@@ -65,11 +57,7 @@ const App: React.FC = () => {
       username: `user_${i + 1}`,
       userAvatar: `https://picsum.photos/seed/story-av-${i}/100/100`,
       media: `https://picsum.photos/seed/story-img-${i}/1080/1920`,
-      viewed: i > 6,
-      poll: i === 1 ? {
-        question: "Curtiu a nova versão do APK?",
-        options: [{ text: "Sim! 🔥", votes: 420 }, { text: "Demais! 🚀", votes: 310 }]
-      } : undefined
+      viewed: i > 6
     }));
     setStories(initialStories);
   }, []);
@@ -80,18 +68,9 @@ const App: React.FC = () => {
     setCurrentView('feed');
   };
 
-  const triggerInstall = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        console.log('APK Instalado com sucesso.');
-      }
-    } else {
-      // Fallback para navegadores sem prompt automático ou instalação manual
-      alert("⚠️ INSTALAÇÃO DO APK:\n\nPara instalar o aplicativo no seu Android:\n1. Clique nos 3 pontinhos do Chrome.\n2. Selecione 'Instalar aplicativo'.\n3. O Carlin Mídia será instalado como um App Nativo.");
-    }
+  const handleDownloadStart = () => {
+    console.log("Download de APK solicitado.");
+    // Aqui poderíamos disparar algum evento de analytics
   };
 
   const renderView = () => {
@@ -116,7 +95,7 @@ const App: React.FC = () => {
       case 'messages': return <Messages />;
       case 'profile': return <Profile user={MOCK_USER} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} />;
       case 'create': return <CreatePost onPostCreated={(p) => setPosts([p, ...posts])} onCancel={() => setCurrentView('feed')} />;
-      case 'download': return <DownloadPage onInstall={triggerInstall} canInstall={!!deferredPrompt} />;
+      case 'download': return <DownloadPage onInstall={handleDownloadStart} canInstall={true} />;
       case 'terms': return <TermsOfUse />;
       case 'privacy': return <PrivacyPolicy />;
       default: return <Feed posts={posts} />;
@@ -125,7 +104,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row font-sans selection:bg-blue-500/40">
-      {/* Sidebar Desktop (Configuração IG Style) */}
+      {/* Sidebar Desktop */}
       {hasAcceptedTerms && (
         <nav className="hidden lg:flex flex-col w-72 border-r border-zinc-900 p-8 sticky top-0 h-screen gap-4">
           <div className="py-6 px-4 mb-8">
@@ -143,8 +122,8 @@ const App: React.FC = () => {
               onClick={() => setCurrentView('download')}
               className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all duration-300 group ${currentView === 'download' ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/30' : 'hover:bg-zinc-900 text-zinc-500 hover:text-white'}`}
             >
-              <div className="text-xl group-hover:scale-125 transition-transform">🤖</div>
-              <span className="font-black italic text-xs tracking-[0.1em]">DOWNLOAD APK</span>
+              <div className="text-xl group-hover:scale-125 transition-transform">📲</div>
+              <span className="font-black italic text-xs tracking-[0.1em]">BAIXAR APK</span>
             </button>
           </div>
         </nav>
@@ -155,8 +134,8 @@ const App: React.FC = () => {
         <header className="lg:hidden fixed top-0 w-full bg-black/80 backdrop-blur-2xl border-b border-zinc-900 z-[100] flex items-center justify-between px-4 h-14">
           <h1 className="text-2xl font-black italic tracking-tighter text-blue-500">CARLIN</h1>
           <div className="flex items-center gap-5">
-            <button onClick={() => setCurrentView('download')} className="text-zinc-400 active:scale-90 transition-transform">
-               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <button onClick={() => setCurrentView('download')} className={`transition-transform active:scale-90 ${currentView === 'download' ? 'text-blue-500' : 'text-zinc-400'}`}>
+               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             </button>
             <button onClick={() => setCurrentView('messages')} className="active:scale-90 transition-transform"><Icons.Message className="w-6 h-6" /></button>
           </div>
