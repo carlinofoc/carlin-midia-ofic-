@@ -33,6 +33,10 @@ export interface Story {
   userAvatar: string;
   media: string;
   viewed: boolean;
+  poll?: {
+    question: string;
+    options: { text: string; votes: number }[];
+  };
 }
 
 export interface Message {
@@ -41,6 +45,8 @@ export interface Message {
   text: string;
   timestamp: Date;
   isAI?: boolean;
+  type?: 'text' | 'image' | 'audio';
+  status?: 'sent' | 'received' | 'read';
 }
 
 export interface Chat {

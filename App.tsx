@@ -15,12 +15,12 @@ import DownloadPage from './components/DownloadPage';
 
 const MOCK_USER: User = {
   id: 'me',
-  username: 'carlin_user',
-  displayName: 'Carlin Explorer',
-  avatar: 'https://picsum.photos/seed/me/200/200',
-  bio: 'Acompanhando o melhor da Carlin Mídia Ofic. 🚀',
-  followers: 1250,
-  following: 840,
+  username: 'carlin_oficial',
+  displayName: 'Carlin Mídia',
+  avatar: 'https://picsum.photos/seed/carlin/200/200',
+  bio: 'Criando conexões reais no mundo digital. 🚀\n👇 Baixe o APK Nativo Oficial abaixo!',
+  followers: 48200,
+  following: 124,
   isVerified: true
 };
 
@@ -28,41 +28,48 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
-  const [legalTab, setLegalTab] = useState<'terms' | 'privacy'>('terms');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState<boolean>(() => {
     return localStorage.getItem('carlin_terms_accepted') === 'true';
   });
   
   useEffect(() => {
-    // Escuta o evento de instalação nativa do Android
+    // Escuta o evento de instalação do sistema (Simulando o download do APK real no Android)
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      console.log('✅ Pronto para instalação nativa!');
+      console.log('Build de APK disponível para instalação via Native Bridge.');
     });
 
-    const initialPosts: Post[] = Array.from({ length: 10 }).map((_, i) => ({
+    // Mock Data
+    const initialPosts: Post[] = Array.from({ length: 15 }).map((_, i) => ({
       id: `post-${i}`,
       userId: `user-${i}`,
       username: `criador_${i + 1}`,
-      userAvatar: `https://picsum.photos/seed/user${i}/100/100`,
-      content: `Explorando as novidades da Carlin Mídia Ofic #${i + 1}. Conteúdo de qualidade! #CarlinMídia #Tendência`,
-      media: [`https://picsum.photos/seed/post${i}/800/1000`],
+      userAvatar: `https://picsum.photos/seed/avatar-${i}/100/100`,
+      content: i % 3 === 0 
+        ? "Novas atualizações no app! Baixe agora o APK oficial e tenha acesso a todas as funcionalidades exclusivas. #APK #Android" 
+        : "Capturando momentos únicos com a Carlin Mídia. #SocialMedia #Style",
+      media: [`https://picsum.photos/seed/post-img-${i}/1080/1350`],
       type: 'image',
-      likes: Math.floor(Math.random() * 5000),
-      comments: Math.floor(Math.random() * 200),
-      timestamp: '2h ago'
+      likes: Math.floor(Math.random() * 85000),
+      comments: Math.floor(Math.random() * 1200),
+      timestamp: `${i + 1}h ago`,
+      location: i % 4 === 0 ? "São Paulo, Brazil" : undefined
     }));
     setPosts(initialPosts);
 
-    const initialStories: Story[] = Array.from({ length: 12 }).map((_, i) => ({
+    const initialStories: Story[] = Array.from({ length: 15 }).map((_, i) => ({
       id: `story-${i}`,
       userId: `user-${i}`,
-      username: `usuario_${i}`,
-      userAvatar: `https://picsum.photos/seed/storyuser${i}/100/100`,
-      media: `https://picsum.photos/seed/storymedia${i}/400/700`,
-      viewed: i > 5
+      username: `user_${i + 1}`,
+      userAvatar: `https://picsum.photos/seed/story-av-${i}/100/100`,
+      media: `https://picsum.photos/seed/story-img-${i}/1080/1920`,
+      viewed: i > 6,
+      poll: i === 1 ? {
+        question: "Curtiu a nova versão do APK?",
+        options: [{ text: "Sim! 🔥", votes: 420 }, { text: "Demais! 🚀", votes: 310 }]
+      } : undefined
     }));
     setStories(initialStories);
   }, []);
@@ -78,45 +85,20 @@ const App: React.FC = () => {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
         setDeferredPrompt(null);
+        console.log('APK Instalado com sucesso.');
       }
     } else {
-      // Fallback para navegadores sem suporte direto ou quando já instalado
-      alert("Para instalar agora: \n1. Clique no menu do navegador (3 pontos)\n2. Selecione 'Instalar Aplicativo'\n3. Pronto! O Carlin Mídia aparecerá no seu menu de apps.");
+      // Fallback para navegadores sem prompt automático ou instalação manual
+      alert("⚠️ INSTALAÇÃO DO APK:\n\nPara instalar o aplicativo no seu Android:\n1. Clique nos 3 pontinhos do Chrome.\n2. Selecione 'Instalar aplicativo'.\n3. O Carlin Mídia será instalado como um App Nativo.");
     }
   };
 
   const renderView = () => {
     if (!hasAcceptedTerms) {
       return (
-        <div className="fixed inset-0 z-[100] bg-black overflow-y-auto flex flex-col">
-          <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800 flex justify-center gap-8 p-4">
-             <button 
-              onClick={() => setLegalTab('terms')}
-              className={`text-sm font-bold uppercase tracking-widest pb-2 transition-colors ${legalTab === 'terms' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-zinc-500'}`}
-             >
-               Termos de Uso
-             </button>
-             <button 
-              onClick={() => setLegalTab('privacy')}
-              className={`text-sm font-bold uppercase tracking-widest pb-2 transition-colors ${legalTab === 'privacy' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-zinc-500'}`}
-             >
-               Privacidade
-             </button>
-          </div>
-          <div className="flex-1">
-            {legalTab === 'terms' ? <TermsOfUse /> : <PrivacyPolicy />}
-          </div>
-          <div className="sticky bottom-0 bg-black/90 backdrop-blur-xl border-t border-zinc-800 p-6 lg:p-10 flex flex-col items-center gap-4">
-            <p className="text-[10px] text-zinc-500 text-center max-w-sm">Ao clicar em aceitar, você confirma que leu e concorda com nossos Termos de Uso e Política de Privacidade.</p>
-            <button 
-              onClick={handleAcceptTerms}
-              className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl transition-all active:scale-95 text-lg"
-            >
-              ✅ Aceito os Termos e Privacidade
-            </button>
-          </div>
+        <div className="fixed inset-0 z-[2000] bg-black">
+          <TermsOfUse onAccept={handleAcceptTerms} showAcceptButton={true} />
         </div>
       );
     }
@@ -124,7 +106,7 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'feed':
         return (
-          <div className="flex flex-col w-full max-w-xl mx-auto pt-16 pb-20 lg:pt-8">
+          <div className="flex flex-col w-full max-w-xl mx-auto pt-14 lg:pt-4">
             <Stories stories={stories} />
             <Feed posts={posts} />
           </div>
@@ -135,94 +117,65 @@ const App: React.FC = () => {
       case 'profile': return <Profile user={MOCK_USER} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} />;
       case 'create': return <CreatePost onPostCreated={(p) => setPosts([p, ...posts])} onCancel={() => setCurrentView('feed')} />;
       case 'download': return <DownloadPage onInstall={triggerInstall} canInstall={!!deferredPrompt} />;
-      case 'terms':
-      case 'privacy':
-        return (
-          <div className="pt-20 lg:pt-8 flex flex-col min-h-screen">
-             <div className="max-w-3xl mx-auto px-6 mb-4 flex gap-4">
-                <button 
-                  onClick={() => setCurrentView('terms')}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold ${currentView === 'terms' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}
-                >
-                  Termos
-                </button>
-                <button 
-                  onClick={() => setCurrentView('privacy')}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold ${currentView === 'privacy' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}
-                >
-                  Privacidade
-                </button>
-             </div>
-            {currentView === 'terms' ? <TermsOfUse /> : <PrivacyPolicy />}
-            <div className="max-w-3xl mx-auto px-6 mb-20">
-              <button 
-                onClick={() => setCurrentView('profile')}
-                className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
-              >
-                Voltar ao Perfil
-              </button>
-            </div>
-          </div>
-        );
+      case 'terms': return <TermsOfUse />;
+      case 'privacy': return <PrivacyPolicy />;
       default: return <Feed posts={posts} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row font-sans selection:bg-blue-500/40">
+      {/* Sidebar Desktop (Configuração IG Style) */}
       {hasAcceptedTerms && (
-        <nav className="hidden lg:flex flex-col w-64 border-r border-zinc-800 p-4 sticky top-0 h-screen gap-2">
-          <h1 className="text-2xl font-black mb-8 italic tracking-tighter px-4 text-blue-500">CARLIN</h1>
+        <nav className="hidden lg:flex flex-col w-72 border-r border-zinc-900 p-8 sticky top-0 h-screen gap-4">
+          <div className="py-6 px-4 mb-8">
+            <h1 className="text-3xl font-black italic tracking-tighter text-blue-500 select-none">CARLIN</h1>
+          </div>
           <NavButton icon={<Icons.Home className="w-6 h-6" />} label="Página Inicial" active={currentView === 'feed'} onClick={() => setCurrentView('feed')} />
           <NavButton icon={<Icons.Search className="w-6 h-6" />} label="Explorar" active={currentView === 'explore'} onClick={() => setCurrentView('explore')} />
           <NavButton icon={<Icons.Play className="w-6 h-6" />} label="Reels" active={currentView === 'reels'} onClick={() => setCurrentView('reels')} />
           <NavButton icon={<Icons.Message className="w-6 h-6" />} label="Mensagens" active={currentView === 'messages'} onClick={() => setCurrentView('messages')} />
           <NavButton icon={<Icons.Plus className="w-6 h-6" />} label="Criar" active={currentView === 'create'} onClick={() => setCurrentView('create')} />
-          <NavButton icon={<Icons.User className="w-6 h-6" />} label="Perfil" active={['profile', 'terms', 'privacy', 'download'].includes(currentView)} onClick={() => setCurrentView('profile')} />
+          <NavButton icon={<Icons.User className="w-6 h-6" />} label="Perfil" active={['profile', 'terms', 'privacy'].includes(currentView)} onClick={() => setCurrentView('profile')} />
           
-          <div className="mt-auto space-y-2">
+          <div className="mt-auto pt-8 border-t border-zinc-900">
             <button 
               onClick={() => setCurrentView('download')}
-              className={`flex items-center gap-4 p-4 rounded-xl transition-colors w-full group ${currentView === 'download' ? 'bg-blue-600/10 text-blue-500' : 'hover:bg-zinc-900 text-zinc-400'}`}
+              className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all duration-300 group ${currentView === 'download' ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/30' : 'hover:bg-zinc-900 text-zinc-500 hover:text-white'}`}
             >
-              <div className="w-6 h-6">
-                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              </div>
-              <span className="font-bold">Baixar APK</span>
-            </button>
-            <button className="flex items-center gap-4 p-4 hover:bg-zinc-900 rounded-xl transition-colors w-full group">
-              <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700">
-                <Icons.Verified className="w-4 h-4 text-zinc-500" />
-              </div>
-              <span className="font-medium text-zinc-400">Configurações</span>
+              <div className="text-xl group-hover:scale-125 transition-transform">🤖</div>
+              <span className="font-black italic text-xs tracking-[0.1em]">DOWNLOAD APK</span>
             </button>
           </div>
         </nav>
       )}
 
-      {hasAcceptedTerms && currentView !== 'reels' && !['terms', 'privacy', 'download'].includes(currentView) && (
-        <header className="lg:hidden fixed top-0 w-full bg-black/80 backdrop-blur-md border-b border-zinc-800 z-50 flex items-center justify-between px-4 h-14">
-          <h1 className="text-xl font-black italic tracking-tighter text-blue-500">CARLIN</h1>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setCurrentView('download')} className="text-zinc-400 hover:text-white">
+      {/* Header Mobile */}
+      {hasAcceptedTerms && currentView !== 'reels' && !['terms', 'privacy', 'download', 'create'].includes(currentView) && (
+        <header className="lg:hidden fixed top-0 w-full bg-black/80 backdrop-blur-2xl border-b border-zinc-900 z-[100] flex items-center justify-between px-4 h-14">
+          <h1 className="text-2xl font-black italic tracking-tighter text-blue-500">CARLIN</h1>
+          <div className="flex items-center gap-5">
+            <button onClick={() => setCurrentView('download')} className="text-zinc-400 active:scale-90 transition-transform">
                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             </button>
-            <button onClick={() => setCurrentView('messages')}><Icons.Message className="w-6 h-6" /></button>
+            <button onClick={() => setCurrentView('messages')} className="active:scale-90 transition-transform"><Icons.Message className="w-6 h-6" /></button>
           </div>
         </header>
       )}
 
-      <main className="flex-1 overflow-y-auto lg:overflow-visible bg-black">
+      {/* View Content */}
+      <main className="flex-1 bg-black overflow-y-auto overflow-x-hidden relative">
         {renderView()}
       </main>
 
+      {/* Navbar Mobile */}
       {hasAcceptedTerms && (
-        <nav className="lg:hidden fixed bottom-0 w-full bg-black border-t border-zinc-800 flex justify-around items-center h-16 z-50">
-          <button onClick={() => setCurrentView('feed')} className={`p-2 ${currentView === 'feed' ? 'text-white' : 'text-zinc-500'}`}><Icons.Home className="w-7 h-7" /></button>
-          <button onClick={() => setCurrentView('explore')} className={`p-2 ${currentView === 'explore' ? 'text-white' : 'text-zinc-500'}`}><Icons.Search className="w-7 h-7" /></button>
-          <button onClick={() => setCurrentView('create')} className={`p-2 ${currentView === 'create' ? 'text-white' : 'text-zinc-500'}`}><Icons.Plus className="w-7 h-7" /></button>
-          <button onClick={() => setCurrentView('reels')} className={`p-2 ${currentView === 'reels' ? 'text-white' : 'text-zinc-500'}`}><Icons.Play className="w-7 h-7" /></button>
-          <button onClick={() => setCurrentView('profile')} className={`p-2 ${['profile', 'terms', 'privacy', 'download'].includes(currentView) ? 'text-white' : 'text-zinc-500'}`}><Icons.User className="w-7 h-7" /></button>
+        <nav className="lg:hidden fixed bottom-0 w-full bg-black/95 backdrop-blur-xl border-t border-zinc-900 flex justify-around items-center h-16 z-[100] pb-safe shadow-2xl">
+          <button onClick={() => setCurrentView('feed')} className={`p-2 transition-transform active:scale-75 ${currentView === 'feed' ? 'text-white' : 'text-zinc-600'}`}><Icons.Home className="w-7 h-7" /></button>
+          <button onClick={() => setCurrentView('explore')} className={`p-2 transition-transform active:scale-75 ${currentView === 'explore' ? 'text-white' : 'text-zinc-600'}`}><Icons.Search className="w-7 h-7" /></button>
+          <button onClick={() => setCurrentView('create')} className={`p-2 transition-transform active:scale-75 ${currentView === 'create' ? 'text-white' : 'text-zinc-600'}`}><Icons.Plus className="w-7 h-7" /></button>
+          <button onClick={() => setCurrentView('reels')} className={`p-2 transition-transform active:scale-75 ${currentView === 'reels' ? 'text-white' : 'text-zinc-600'}`}><Icons.Play className="w-7 h-7" /></button>
+          <button onClick={() => setCurrentView('profile')} className={`p-2 transition-transform active:scale-75 ${['profile', 'terms', 'privacy', 'download'].includes(currentView) ? 'text-white' : 'text-zinc-600'}`}><Icons.User className="w-7 h-7" /></button>
         </nav>
       )}
     </div>
@@ -232,12 +185,12 @@ const App: React.FC = () => {
 const NavButton = ({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 group ${active ? 'bg-zinc-900' : 'hover:bg-zinc-900'}`}
+    className={`flex items-center gap-5 p-4 rounded-3xl transition-all duration-300 group ${active ? 'bg-zinc-900 shadow-xl' : 'hover:bg-zinc-900'}`}
   >
-    <div className={`${active ? 'scale-110 text-white' : 'group-hover:scale-110 text-zinc-400'} transition-transform`}>
+    <div className={`${active ? 'scale-110 text-blue-500' : 'group-hover:scale-110 text-zinc-600'} transition-transform`}>
       {icon}
     </div>
-    <span className={`text-base ${active ? 'font-bold text-white' : 'font-medium text-zinc-300'}`}>{label}</span>
+    <span className={`text-base tracking-tight ${active ? 'font-black text-white' : 'font-medium text-zinc-500'}`}>{label}</span>
   </button>
 );
 
