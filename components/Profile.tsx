@@ -25,11 +25,12 @@ interface ProfileProps {
   onOpenNotificationSettings: () => void;
   onOpenDeveloperInfo: () => void;
   onOpenDeveloperManifesto: () => void;
+  onOpenAdvancedSettings: () => void;
 }
 
 const Profile: React.FC<ProfileProps> = ({ 
   user, onOpenTerms, onOpenPrivacy, isLite, onToggleLite, isDark, onToggleDark, 
-  onOpenDashboard, onOpenVerification, onUpdateUser, onOpenAdControls, onOpenManifesto, onOpenBetaCenter, onOpenCreatorPlus, onOpenRoadmap, onOpenMonetizationInfo, onOpenNotificationSettings, onOpenDeveloperInfo, onOpenDeveloperManifesto
+  onOpenDashboard, onOpenVerification, onUpdateUser, onOpenAdControls, onOpenManifesto, onOpenBetaCenter, onOpenCreatorPlus, onOpenRoadmap, onOpenMonetizationInfo, onOpenNotificationSettings, onOpenDeveloperInfo, onOpenDeveloperManifesto, onOpenAdvancedSettings
 }) => {
   const [tab, setTab] = useState<'posts' | 'saved' | 'tagged'>('posts');
   const [showLiteHelp, setShowLiteHelp] = useState(false);
@@ -52,6 +53,17 @@ const Profile: React.FC<ProfileProps> = ({
 
   return (
     <div className={`w-full max-w-2xl mx-auto pt-14 lg:pt-8 ${containerClasses} min-h-screen transition-colors pb-32`}>
+      {/* Header Bar */}
+      <div className="flex items-center justify-between px-5 py-4">
+        <h1 className="text-lg font-black uppercase tracking-widest text-blue-500">Perfil Oficial</h1>
+        <button 
+          onClick={onOpenAdvancedSettings}
+          className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:scale-110 active:rotate-90 transition-all shadow-lg"
+        >
+          <Icons.Settings className="w-6 h-6 text-white" />
+        </button>
+      </div>
+
       {/* Header Info */}
       <div className="px-5 py-6 space-y-6">
         <div className="flex items-center justify-between gap-6">
@@ -165,7 +177,7 @@ const Profile: React.FC<ProfileProps> = ({
            </div>
         </div>
 
-        {/* New Bastidores Section */}
+        {/* About App Section */}
         <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Sobre o Aplicativo</h3>
            <div className="space-y-3">
@@ -199,7 +211,7 @@ const Profile: React.FC<ProfileProps> = ({
            </div>
         </div>
 
-        {/* Ads & Manifesto Section */}
+        {/* Ads & Ethics Section */}
         <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Ética e Ads</h3>
            <div className="grid grid-cols-2 gap-3">
@@ -218,45 +230,6 @@ const Profile: React.FC<ProfileProps> = ({
                  <span className="text-xl">📜</span>
                  <p className="text-[9px] font-black uppercase tracking-widest leading-none">Estratégia</p>
                  <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Monetização Justa</p>
-              </button>
-           </div>
-        </div>
-
-        {/* Accessibility & Modes Toggle Section */}
-        <div className={`${cardClasses} rounded-2xl p-5 border space-y-5 transition-colors relative`}>
-           <div className="flex justify-between items-center">
-             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Acessibilidade & Performance</h3>
-             <button 
-                onClick={() => setShowLiteHelp(!showLiteHelp)}
-                className="w-5 h-5 rounded-full border border-zinc-700 flex items-center justify-center text-[10px] font-black text-zinc-500 hover:bg-zinc-800"
-             >
-               ?
-             </button>
-           </div>
-           
-           <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-widest">Modo Light (Otimizado)</h4>
-                <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Reduz consumo visual.</p>
-              </div>
-              <button 
-                onClick={onToggleLite}
-                className={`w-12 h-6 rounded-full relative transition-all ${isLite ? 'bg-blue-600' : (isDark ? 'bg-zinc-700' : 'bg-zinc-200')}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${isLite ? 'left-7' : 'left-1'}`}></div>
-              </button>
-           </div>
-
-           <div className="flex items-center justify-between border-t pt-4 border-zinc-100/10">
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-widest">Modo Escuro (Dark)</h4>
-                <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Foco no conteúdo.</p>
-              </div>
-              <button 
-                onClick={onToggleDark}
-                className={`w-12 h-6 rounded-full relative transition-all ${isDark ? 'bg-blue-600' : 'bg-zinc-200'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${isDark ? 'left-7' : 'left-1'}`}></div>
               </button>
            </div>
         </div>

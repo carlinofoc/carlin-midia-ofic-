@@ -30,6 +30,7 @@ import CancelSubscription from './components/CancelSubscription';
 import NotificationSettings from './components/NotificationSettings';
 import DeveloperInfo from './components/DeveloperInfo';
 import DeveloperManifesto from './components/DeveloperManifesto';
+import AdvancedSettings from './components/AdvancedSettings';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
@@ -300,6 +301,17 @@ const App: React.FC = () => {
           onOpenNotificationSettings={() => setCurrentView('notification_settings')}
           onOpenDeveloperInfo={() => setCurrentView('developer_info')}
           onOpenDeveloperManifesto={() => setCurrentView('developer_manifesto')}
+          onOpenAdvancedSettings={() => setCurrentView('advanced_settings')}
+        />
+      );
+      case 'advanced_settings': return (
+        <AdvancedSettings 
+          user={currentUser!} 
+          onBack={() => setCurrentView('profile')} 
+          isDark={darkMode} 
+          onToggleDark={() => setDarkMode(!darkMode)}
+          isLite={liteMode}
+          onToggleLite={() => setLiteMode(!liteMode)}
         />
       );
       case 'developer_info': return (
@@ -370,7 +382,7 @@ const App: React.FC = () => {
         </nav>
       )}
 
-      {currentUser && !['terms', 'privacy', 'download', 'create', 'verification', 'biometric_policy', 'ad_controls', 'monetization_manifesto', 'beta_center', 'creator_plus', 'beta_terms', 'roadmap', 'creator_plus_faq', 'monetization_info', 'cancel_subscription', 'notification_settings', 'developer_info', 'developer_manifesto'].includes(currentView) && (
+      {currentUser && !['terms', 'privacy', 'download', 'create', 'verification', 'biometric_policy', 'ad_controls', 'monetization_manifesto', 'beta_center', 'creator_plus', 'beta_terms', 'roadmap', 'creator_plus_faq', 'monetization_info', 'cancel_subscription', 'notification_settings', 'developer_info', 'developer_manifesto', 'advanced_settings'].includes(currentView) && (
         <header className={`lg:hidden fixed top-0 w-full ${darkMode ? 'bg-black/95 border-zinc-900' : 'bg-white/95 border-zinc-200'} border-b z-[100] flex items-center justify-between px-6 h-14 backdrop-blur-md`}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center overflow-hidden border border-zinc-800">
