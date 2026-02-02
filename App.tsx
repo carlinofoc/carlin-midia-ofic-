@@ -35,10 +35,11 @@ const App: React.FC = () => {
   });
   
   useEffect(() => {
-    // Listen for the beforeinstallprompt event for Android APK simulation
+    // Escuta o evento de instalação nativa do Android
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      console.log('✅ Pronto para instalação nativa!');
     });
 
     const initialPosts: Post[] = Array.from({ length: 10 }).map((_, i) => ({
@@ -77,11 +78,12 @@ const App: React.FC = () => {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        console.log('Usuário aceitou a instalação');
+        console.log('User accepted the install prompt');
+        setDeferredPrompt(null);
       }
-      setDeferredPrompt(null);
     } else {
-      alert("Para instalar no Android: Clique nos 3 pontinhos do navegador e selecione 'Instalar Aplicativo'.");
+      // Fallback para navegadores sem suporte direto ou quando já instalado
+      alert("Para instalar agora: \n1. Clique no menu do navegador (3 pontos)\n2. Selecione 'Instalar Aplicativo'\n3. Pronto! O Carlin Mídia aparecerá no seu menu de apps.");
     }
   };
 
@@ -186,7 +188,7 @@ const App: React.FC = () => {
               <div className="w-6 h-6">
                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
               </div>
-              <span className="font-bold">Baixar App</span>
+              <span className="font-bold">Baixar APK</span>
             </button>
             <button className="flex items-center gap-4 p-4 hover:bg-zinc-900 rounded-xl transition-colors w-full group">
               <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700">

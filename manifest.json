@@ -1,25 +1,25 @@
 
 {
-  "short_name": "Carlin",
-  "name": "Carlin Mídia Ofic",
-  "description": "A rede social do futuro.",
+  "short_name": "CarlinMídia",
+  "name": "Carlin Mídia Oficial",
+  "description": "Rede Social Carlin Mídia Oficial - Versão Instalável",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/carlin_icon/192/192",
+      "src": "https://picsum.photos/seed/carlin_app/192/192",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "https://picsum.photos/seed/carlin_icon/512/512",
+      "src": "https://picsum.photos/seed/carlin_app/512/512",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "./index.html",
   "display": "standalone",
   "theme_color": "#000000",
   "background_color": "#000000",
   "orientation": "portrait",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"]
+  "categories": ["social", "entertainment"]
 }
