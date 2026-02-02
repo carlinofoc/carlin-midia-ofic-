@@ -5,10 +5,10 @@
     "slug": "carlin-midia-ofic",
     "version": "3.5.2",
     "orientation": "portrait",
-    "icon": "https://picsum.photos/seed/carlin_app/512/512",
+    "icon": "./assets/profile.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "https://picsum.photos/seed/carlin_splash/1024/1024",
+      "image": "./assets/profile.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "https://picsum.photos/seed/carlin_app_fg/512/512",
+        "foregroundImage": "./assets/profile.png",
         "backgroundColor": "#000000"
       },
       "package": "com.carlin.midia.ofic",
@@ -33,7 +33,7 @@
       ]
     },
     "web": {
-      "favicon": "https://picsum.photos/seed/carlin_app/48/48"
+      "favicon": "./assets/profile.png"
     }
   }
 }

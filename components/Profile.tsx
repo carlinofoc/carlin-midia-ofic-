@@ -18,28 +18,32 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy }) =
       <div className="px-4 py-6 space-y-6">
         <div className="flex items-center justify-between gap-8">
           <div className="relative group">
-            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-[3px] bg-gradient-to-tr from-blue-600 to-blue-400">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-[3px] bg-gradient-to-tr from-blue-600 to-blue-400">
               <div className="w-full h-full rounded-full bg-black overflow-hidden border-4 border-black">
-                <img src={user.avatar} className="w-full h-full object-cover" />
+                <img 
+                  src={user.avatar || 'assets/profile.png'} 
+                  className="w-full h-full object-cover"
+                  alt="Perfil"
+                />
               </div>
             </div>
-            <div className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-black">
+            <div className="absolute bottom-1 right-1 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center border-2 border-black">
               <Icons.Plus className="w-4 h-4 text-white" />
             </div>
           </div>
 
           <div className="flex flex-1 justify-around text-center">
             <div>
-              <p className="font-black text-lg">42</p>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Posts</p>
+              <p className="font-black text-xl">42</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Posts</p>
             </div>
             <div>
-              <p className="font-black text-lg">{user.followers.toLocaleString()}</p>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Seguidores</p>
+              <p className="font-black text-xl">{user.followers.toLocaleString()}</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Seguidores</p>
             </div>
             <div>
-              <p className="font-black text-lg">{user.following.toLocaleString()}</p>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Seguindo</p>
+              <p className="font-black text-xl">{user.following.toLocaleString()}</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Seguindo</p>
             </div>
           </div>
         </div>
@@ -47,11 +51,12 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy }) =
         {/* Bio */}
         <div className="space-y-1">
           <div className="flex items-center gap-1">
-            <h2 className="font-bold text-sm">{user.displayName}</h2>
+            <h2 className="font-black text-base">{user.displayName}</h2>
             <Icons.Verified className="w-4 h-4" />
           </div>
+          <p className="text-[11px] text-blue-500 font-black uppercase tracking-widest mb-2">@{user.username}</p>
           <p className="text-sm text-zinc-300 leading-snug">{user.bio}</p>
-          <a href="#" className="text-sm text-blue-400 font-medium flex items-center gap-1">
+          <a href="#" className="text-sm text-blue-400 font-medium flex items-center gap-1 mt-2">
             <svg className="w-3 h-3 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.172 13.828a4 4 0 015.656 0l4-4a4 4 0 10-5.656-5.656l-1.102 1.101" /></svg>
             carlinmidia.ofic/social
           </a>
@@ -59,9 +64,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy }) =
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <button className="flex-1 bg-zinc-900 hover:bg-zinc-800 py-2 rounded-lg text-sm font-bold transition-colors">Editar perfil</button>
-          <button className="flex-1 bg-zinc-900 hover:bg-zinc-800 py-2 rounded-lg text-sm font-bold transition-colors">Compartilhar perfil</button>
-          <button className="bg-zinc-900 hover:bg-zinc-800 px-3 rounded-lg"><Icons.User className="w-5 h-5" /></button>
+          <button className="flex-1 bg-zinc-900 hover:bg-zinc-800 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors border border-zinc-800">Editar perfil</button>
+          <button className="flex-1 bg-zinc-900 hover:bg-zinc-800 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors border border-zinc-800">Compartilhar</button>
+          <button className="bg-zinc-900 hover:bg-zinc-800 px-4 rounded-xl border border-zinc-800"><Icons.User className="w-5 h-5" /></button>
         </div>
 
         {/* Highlights */}
@@ -84,14 +89,14 @@ const Profile: React.FC<ProfileProps> = ({ user, onOpenTerms, onOpenPrivacy }) =
       </div>
 
       {/* Tabs */}
-      <div className="flex border-t border-zinc-900">
-        <button onClick={() => setTab('posts')} className={`flex-1 flex justify-center py-3 ${tab === 'posts' ? 'border-t-2 border-white' : 'text-zinc-500'}`}>
+      <div className="flex border-t border-zinc-900 mt-4">
+        <button onClick={() => setTab('posts')} className={`flex-1 flex justify-center py-4 ${tab === 'posts' ? 'border-t-2 border-white text-white' : 'text-zinc-600'}`}>
           <Icons.Home className="w-6 h-6" />
         </button>
-        <button onClick={() => setTab('saved')} className={`flex-1 flex justify-center py-3 ${tab === 'saved' ? 'border-t-2 border-white' : 'text-zinc-500'}`}>
+        <button onClick={() => setTab('saved')} className={`flex-1 flex justify-center py-4 ${tab === 'saved' ? 'border-t-2 border-white text-white' : 'text-zinc-600'}`}>
           <Icons.Bookmark className="w-6 h-6" />
         </button>
-        <button onClick={() => setTab('tagged')} className={`flex-1 flex justify-center py-3 ${tab === 'tagged' ? 'border-t-2 border-white' : 'text-zinc-500'}`}>
+        <button onClick={() => setTab('tagged')} className={`flex-1 flex justify-center py-4 ${tab === 'tagged' ? 'border-t-2 border-white text-white' : 'text-zinc-600'}`}>
           <Icons.User className="w-6 h-6" />
         </button>
       </div>

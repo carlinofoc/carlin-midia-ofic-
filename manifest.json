@@ -5,13 +5,13 @@
   "description": "Rede Social Carlin Mídia Oficial - Aplicativo Nativo Instalável",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/carlin_app/192/192",
+      "src": "assets/profile.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "https://picsum.photos/seed/carlin_app/512/512",
+      "src": "assets/profile.png",
       "type": "image/png",
       "sizes": "512x512"
     }
@@ -28,13 +28,13 @@
       "name": "Novo Post",
       "short_name": "Criar",
       "url": "/?view=create",
-      "icons": [{ "src": "https://picsum.photos/seed/plus/192/192", "sizes": "192x192" }]
+      "icons": [{ "src": "assets/profile.png", "sizes": "192x192" }]
     },
     {
       "name": "Mensagens",
       "short_name": "Direct",
       "url": "/?view=messages",
-      "icons": [{ "src": "https://picsum.photos/seed/msg/192/192", "sizes": "192x192" }]
+      "icons": [{ "src": "assets/profile.png", "sizes": "192x192" }]
     }
   ]
 }

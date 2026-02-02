@@ -33,6 +33,7 @@ const App: React.FC = () => {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      console.log('App pronto para ser envelopado nativamente.');
     });
 
     // Mock Data initialization
@@ -40,7 +41,7 @@ const App: React.FC = () => {
       id: `post-${i}`,
       userId: `user-${i}`,
       username: `criador_${i + 1}`,
-      userAvatar: `https://picsum.photos/seed/avatar-${i}/100/100`,
+      userAvatar: i === 0 ? 'assets/profile.png' : `https://picsum.photos/seed/avatar-${i}/100/100`,
       content: i % 3 === 0 
         ? "Acabei de atualizar o app nativo! O novo APK está incrível e muito mais rápido. Recomendo baixar! ⚡️ #Update #Android #Native" 
         : "Vivendo o melhor da tecnologia mobile. Carlin Mídia Ofic. ✨ #Vibe #SocialApp",
@@ -57,7 +58,7 @@ const App: React.FC = () => {
       id: `story-${i}`,
       userId: `user-${i}`,
       username: `user_${i + 1}`,
-      userAvatar: `https://picsum.photos/seed/story-av-${i}/100/100`,
+      userAvatar: i === 0 ? 'assets/profile.png' : `https://picsum.photos/seed/story-av-${i}/100/100`,
       media: `https://picsum.photos/seed/story-img-${i}/1080/1920`,
       viewed: i > 6
     }));
@@ -128,10 +129,13 @@ const App: React.FC = () => {
       {/* Sidebar Desktop Native Style */}
       {hasAcceptedTerms && currentUser && (
         <nav className="hidden lg:flex flex-col w-72 border-r border-zinc-900 p-8 sticky top-0 h-screen gap-4 bg-black">
-          <div className="py-6 px-4 mb-8">
-            <h1 className="text-3xl font-black italic tracking-tighter text-blue-500 select-none">CARLIN</h1>
+          <div className="py-6 px-4 mb-8 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center overflow-hidden shadow-lg shadow-blue-500/20">
+               <img src="assets/profile.png" alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            <h1 className="text-2xl font-black italic tracking-tighter text-blue-500 select-none uppercase">CARLIN</h1>
           </div>
-          <NavButton icon={<Icons.Home className="w-6 h-6" />} label="Página Inicial" active={currentView === 'feed'} onClick={() => setCurrentView('feed')} />
+          <NavButton icon={<Icons.Home className="w-6 h-6" />} label="Início" active={currentView === 'feed'} onClick={() => setCurrentView('feed')} />
           <NavButton icon={<Icons.Search className="w-6 h-6" />} label="Explorar" active={currentView === 'explore'} onClick={() => setCurrentView('explore')} />
           <NavButton icon={<Icons.Play className="w-6 h-6" />} label="Reels" active={currentView === 'reels'} onClick={() => setCurrentView('reels')} />
           <NavButton icon={<Icons.Message className="w-6 h-6" />} label="Mensagens" active={currentView === 'messages'} onClick={() => setCurrentView('messages')} />
@@ -144,7 +148,7 @@ const App: React.FC = () => {
               className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all duration-300 group ${currentView === 'download' ? 'bg-white text-black shadow-2xl' : 'hover:bg-zinc-900 text-zinc-500 hover:text-white'}`}
             >
               <div className="text-xl group-hover:scale-125 transition-transform">📲</div>
-              <span className="font-black italic text-xs tracking-[0.1em]">APK OFICIAL</span>
+              <span className="font-black italic text-xs tracking-[0.1em] uppercase">APK Oficial</span>
             </button>
           </div>
         </nav>
@@ -153,7 +157,12 @@ const App: React.FC = () => {
       {/* Header Mobile Native-Like */}
       {hasAcceptedTerms && currentUser && currentView !== 'reels' && !['terms', 'privacy', 'download', 'create'].includes(currentView) && (
         <header className="lg:hidden fixed top-0 w-full bg-black/90 backdrop-blur-2xl border-b border-zinc-900 z-[100] flex items-center justify-between px-6 h-14">
-          <h1 className="text-2xl font-black italic tracking-tighter text-blue-500">CARLIN</h1>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center overflow-hidden">
+               <img src="assets/profile.png" alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            <h1 className="text-xl font-black italic tracking-tighter text-blue-500 uppercase">CARLIN</h1>
+          </div>
           <div className="flex items-center gap-6">
             <button onClick={() => setCurrentView('download')} className={`transition-transform active:scale-90 ${currentView === 'download' ? 'text-white' : 'text-zinc-500'}`}>
                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -175,7 +184,11 @@ const App: React.FC = () => {
           <button onClick={() => setCurrentView('explore')} className={`p-3 transition-transform active:scale-75 ${currentView === 'explore' ? 'text-white' : 'text-zinc-600'}`}><Icons.Search className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('create')} className={`p-3 transition-transform active:scale-75 ${currentView === 'create' ? 'text-white' : 'text-zinc-600'}`}><Icons.Plus className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('reels')} className={`p-3 transition-transform active:scale-75 ${currentView === 'reels' ? 'text-white' : 'text-zinc-600'}`}><Icons.Play className="w-7 h-7" /></button>
-          <button onClick={() => setCurrentView('profile')} className={`p-3 transition-transform active:scale-75 ${['profile', 'terms', 'privacy', 'download'].includes(currentView) ? 'text-white' : 'text-zinc-600'}`}><Icons.User className="w-7 h-7" /></button>
+          <button onClick={() => setCurrentView('profile')} className={`p-3 transition-transform active:scale-75 ${['profile', 'terms', 'privacy', 'download'].includes(currentView) ? 'text-white' : 'text-zinc-600'}`}>
+            <div className="w-7 h-7 rounded-full overflow-hidden border border-zinc-700">
+               <img src={currentUser.avatar || 'assets/profile.png'} className="w-full h-full object-cover" />
+            </div>
+          </button>
         </nav>
       )}
     </div>
