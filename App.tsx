@@ -24,6 +24,8 @@ import SecurityCenter from './components/SecurityCenter';
 import CombinedBanner from './components/CombinedBanner';
 import CreatorPlusFAQ from './components/CreatorPlusFAQ';
 import CancelSubscription from './components/CancelSubscription';
+import Explore from './components/Explore';
+import Reels from './components/Reels';
 import { rankFeed } from './services/algorithmService';
 import { dbService } from './services/dbService';
 
@@ -104,8 +106,8 @@ const App: React.FC = () => {
         userAvatar: `https://picsum.photos/seed/post-${i}/150/150`,
         content: `Conteúdo estratégico sobre ${category}. Insights de valor real para criadores.`,
         category,
-        media: [`https://picsum.photos/seed/media-${i}/1080/1080`],
-        type: 'image',
+        media: [i % 4 === 0 ? 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-dancing-2322-large.mp4' : `https://picsum.photos/seed/media-${i}/1080/1080`],
+        type: i % 4 === 0 ? 'video' : 'image',
         likes: Math.floor(Math.random() * 500),
         comments: Math.floor(Math.random() * 50),
         shares: Math.floor(Math.random() * 20),
@@ -199,6 +201,10 @@ const App: React.FC = () => {
             <Feed posts={feedItems} currentUser={currentUser!} showInstaBanner={showInstaBanner} onCloseBanner={() => setShowInstaBanner(false)} onOpenInfo={() => setShowReachInfo(true)} onOpenCreate={() => setCurrentView('create')} />
           </div>
         );
+      case 'explore':
+        return <Explore posts={feedItems as Post[]} />;
+      case 'reels':
+        return <Reels />;
       case 'profile': return (
         <Profile 
           user={currentUser!} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} 
@@ -244,6 +250,8 @@ const App: React.FC = () => {
              <h1 className="text-xl font-black italic tracking-tighter text-blue-500 uppercase">CARLIN</h1>
           </div>
           <NavButton icon={<Icons.Home className="w-6 h-6" />} label="Feed" active={currentView === 'feed'} onClick={() => setCurrentView('feed')} darkMode={darkMode} />
+          <NavButton icon={<Icons.Search className="w-6 h-6" />} label="Pesquisar" active={currentView === 'explore'} onClick={() => setCurrentView('explore')} darkMode={darkMode} />
+          <NavButton icon={<Icons.Play className="w-6 h-6" />} label="Rios" active={currentView === 'reels'} onClick={() => setCurrentView('reels')} darkMode={darkMode} />
           <NavButton icon={<Icons.User className="w-6 h-6" />} label="Perfil" active={currentView === 'profile'} onClick={() => setCurrentView('profile')} darkMode={darkMode} />
           <div className="mt-auto">
              <button onClick={handleLogout} className="flex items-center gap-4 p-4 text-zinc-500 hover:text-red-500 transition-colors">
@@ -261,6 +269,8 @@ const App: React.FC = () => {
       {isAuthenticated && (
         <nav className={`lg:hidden fixed bottom-0 w-full ${darkMode ? 'bg-black/95 border-zinc-900' : 'bg-white/95 border-zinc-200'} border-t flex justify-around items-center h-16 z-[100] backdrop-blur-md`}>
           <button onClick={() => setCurrentView('feed')} className={`p-2 ${currentView === 'feed' ? 'text-blue-500' : 'text-zinc-500'}`}><Icons.Home className="w-7 h-7" /></button>
+          <button onClick={() => setCurrentView('explore')} className={`p-2 ${currentView === 'explore' ? 'text-blue-500' : 'text-zinc-500'}`}><Icons.Search className="w-7 h-7" /></button>
+          <button onClick={() => setCurrentView('reels')} className={`p-2 ${currentView === 'reels' ? 'text-blue-500' : 'text-zinc-500'}`}><Icons.Play className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('create')} className={`p-2 ${currentView === 'create' ? 'text-blue-500' : 'text-zinc-500'}`}><Icons.Plus className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('profile')} className={`p-2 ${currentView === 'profile' ? 'text-blue-500' : 'text-zinc-500'}`}>
             <div className={`w-7 h-7 rounded-full overflow-hidden border ${currentView === 'profile' ? 'border-blue-500' : 'border-zinc-300'}`}>
