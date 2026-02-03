@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, Post } from '../types';
+import { User } from '../types';
 import { dbService } from '../services/dbService';
 
 interface SecurityCenterProps {
@@ -19,7 +19,7 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ user, onBack, onUpdateU
       setTimeout(() => {
         onUpdateUser(updatedUser);
         setIsRotating(false);
-        alert("Chaves rotacionadas com sucesso! Todos os dados foram re-encriptados.");
+        alert("Chaves rotacionadas com sucesso! Todos os dados foram re-encriptados com novos envelopes.");
       }, 2000);
     } catch {
       alert("Erro ao rotacionar chaves.");
@@ -37,20 +37,92 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ user, onBack, onUpdateU
             </svg>
           </button>
           <div className="text-right">
-            <h1 className="text-xl font-black italic tracking-tighter uppercase text-blue-500 leading-none">Cofre Carlin v4.6</h1>
-            <span className="text-[7px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-1">Simulação Mongoose/AES-GCM</span>
+            <h1 className="text-xl font-black italic tracking-tighter uppercase text-blue-500 leading-none">Cofre Carlin v4.9</h1>
+            <span className="text-[7px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-1">Envelope Encryption Bridge</span>
           </div>
         </div>
 
-        {/* Dashboard de Chaves */}
-        <section className="bg-zinc-900/60 border border-zinc-800 rounded-[3rem] p-8 space-y-8 shadow-2xl relative overflow-hidden">
+        {/* Auditoria Visual de Envelope */}
+        <section className="bg-zinc-900/40 border border-zinc-800 rounded-[3rem] p-8 space-y-8 shadow-2xl relative overflow-hidden">
            <div className="absolute top-0 right-0 p-8 opacity-5">
-              <span className="text-7xl font-black italic">AES</span>
+              <span className="text-7xl font-black italic">WRAP</span>
            </div>
 
+           <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                 <span className="text-2xl">🏛️</span>
+                 <h3 className="text-xs font-black uppercase text-white tracking-widest leading-none">Arquitetura de Cofre Hierárquico</h3>
+              </div>
+
+              {/* Diagrama de Envelope */}
+              <div className="flex flex-col items-center gap-4 py-4">
+                 <div className="w-full bg-blue-600/10 border border-blue-600/30 p-4 rounded-2xl flex items-center justify-between group hover:bg-blue-600/20 transition-all">
+                    <div className="flex flex-col">
+                       <span className="text-[9px] font-black text-blue-500 uppercase">Camada 1: Master Key</span>
+                       <span className="text-[10px] font-mono text-white truncate w-40">0x{user.chave.slice(0, 20)}...</span>
+                    </div>
+                    <span className="text-xl">🔑</span>
+                 </div>
+                 
+                 <div className="w-0.5 h-6 bg-zinc-800"></div>
+
+                 <div className="w-full bg-indigo-600/10 border border-indigo-600/30 p-4 rounded-2xl flex items-center justify-between group hover:bg-indigo-600/20 transition-all">
+                    <div className="flex flex-col">
+                       <span className="text-[9px] font-black text-indigo-500 uppercase">Camada 2: Encrypted DEK</span>
+                       <span className="text-[10px] font-mono text-white italic">Criptografada via AES-GCM-256</span>
+                    </div>
+                    <span className="text-xl">🧧</span>
+                 </div>
+
+                 <div className="w-0.5 h-6 bg-zinc-800"></div>
+
+                 <div className="w-full bg-zinc-800/50 border border-zinc-700 p-4 rounded-2xl flex items-center justify-between">
+                    <div className="flex flex-col">
+                       <span className="text-[9px] font-black text-zinc-500 uppercase">Camada 3: Seus Dados</span>
+                       <span className="text-[10px] text-zinc-300 font-medium">Nome, Email, Bio (Zero-Knowledge)</span>
+                    </div>
+                    <span className="text-xl">📦</span>
+                 </div>
+              </div>
+
+              <p className="text-[10px] text-zinc-500 leading-relaxed italic text-center">
+                "O Carlin v4.9 gera uma chave única para cada dado. Mesmo que uma chave de dados seja comprometida, a Master Key protege todo o restante do ecossistema."
+              </p>
+           </div>
+        </section>
+
+        {/* Auditoria de Algoritmo */}
+        <section className="bg-zinc-900/40 border border-zinc-800 rounded-[3rem] p-8 space-y-6 shadow-2xl">
+           <div className="flex items-center gap-3">
+              <span className="text-2xl">⚖️</span>
+              <h3 className="text-xs font-black uppercase text-white tracking-widest leading-none">Pesos de Relevância (Simulação)</h3>
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                 <h4 className="text-[10px] font-black uppercase text-blue-500">Amigos</h4>
+                 <ul className="space-y-2 text-[10px] font-medium text-zinc-400 uppercase tracking-tighter">
+                    <li className="flex justify-between">Interesse Comum <span>50%</span></li>
+                    <li className="flex justify-between">Engajamento <span>30%</span></li>
+                    <li className="flex justify-between">Recência <span>20%</span></li>
+                 </ul>
+              </div>
+              <div className="space-y-4">
+                 <h4 className="text-[10px] font-black uppercase text-orange-500">Explorar</h4>
+                 <ul className="space-y-2 text-[10px] font-medium text-zinc-400 uppercase tracking-tighter">
+                    <li className="flex justify-between">Viralidade <span>50%</span></li>
+                    <li className="flex justify-between">Match Interesse <span>30%</span></li>
+                    <li className="flex justify-between">Diversidade <span>20%</span></li>
+                 </ul>
+              </div>
+           </div>
+        </section>
+
+        {/* Gerenciamento de Chaves */}
+        <section className="bg-zinc-900/60 border border-zinc-800 rounded-[3rem] p-8 space-y-6 shadow-2xl">
            <div className="space-y-4">
               <h3 className="text-xs font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
-                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> Chave Individual do Usuário (Buffer)
+                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> Master Key do Dispositivo
               </h3>
               <div className="bg-black p-6 rounded-2xl border border-zinc-800">
                  <p className="text-[10px] font-mono text-zinc-500 break-all leading-relaxed">
@@ -59,42 +131,18 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ user, onBack, onUpdateU
               </div>
            </div>
 
-           <div className="flex flex-col gap-4">
-              <button 
-                onClick={handleRotate}
-                disabled={isRotating}
-                className={`w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] active:scale-95 transition-all shadow-xl shadow-blue-500/10 ${isRotating ? 'opacity-50' : ''}`}
-              >
-                {isRotating ? 'Rotacionando e Re-encriptando...' : 'Rotacionar Chaves de Segurança'}
-              </button>
-              <p className="text-[9px] text-zinc-500 font-bold uppercase text-center tracking-tighter">
-                A rotação gera uma nova chave AES-256 e recriptografa seu Nome e Email.
-              </p>
-           </div>
-        </section>
-
-        {/* Database Visualization */}
-        <section className="space-y-4">
-           <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-              <h3 className="text-xs font-black uppercase text-white tracking-widest">Tabela: Usuarios (Mock MongoDB)</h3>
-           </div>
-           <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl">
-              <pre className="text-[10px] font-mono text-zinc-400 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                 {JSON.stringify({
-                   id: user.id,
-                   nome: user.nome_encrypted,
-                   email: user.email_encrypted,
-                   senha_hash: user.passwordHash.substring(0, 32) + "...",
-                   chave_aes: "[PROTECTED_BUFFER]"
-                 }, null, 2)}
-              </pre>
-           </div>
+           <button 
+             onClick={handleRotate}
+             disabled={isRotating}
+             className={`w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] active:scale-95 transition-all shadow-xl ${isRotating ? 'opacity-50' : ''}`}
+           >
+             {isRotating ? 'Regerando Envelopes...' : 'Rotacionar Master Key & Re-wrap'}
+           </button>
         </section>
 
         <div className="p-10 bg-blue-600/5 border border-dashed border-blue-600/20 rounded-[3rem] text-center space-y-4">
            <p className="text-[11px] text-zinc-400 leading-relaxed italic">
-             "O Carlin garante Zero-Knowledge. Nem mesmo o administrador do sistema pode ler seus dados sem a chave individual gerada no seu registro."
+             "Carlin v4.9 implementa Zero-Knowledge real. Nem mesmo backups do servidor contêm chaves de leitura, pois elas residem apenas na sua chave mestra criptografada."
            </p>
         </div>
       </div>

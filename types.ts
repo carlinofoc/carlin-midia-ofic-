@@ -7,17 +7,27 @@ export interface EncryptedPayload {
   encrypted: string;
   iv: string;
   tag: string;
+  // Envelope Encryption (Carlin v4.9)
+  encryptedDEK?: string;
+  dekIv?: string;
+  dekTag?: string;
 }
 
-// Tabela: Usuarios (Mock Mongoose Schema)
+export interface NotificationPrefs {
+  performance: boolean;
+  educational: boolean;
+  security: boolean;
+  community: boolean;
+}
+
 export interface User {
   id: string;
   username: string;
-  displayName: string; // Descriptografado em memória
+  displayName: string;
   nome_encrypted: EncryptedPayload;
   email_encrypted: EncryptedPayload;
-  passwordHash: string; // senha_hash
-  chave: string; // Buffer Hex (Chave AES individual do usuário)
+  passwordHash: string;
+  chave: string;
   avatar: string;
   bio?: string;
   followers: number;
@@ -26,25 +36,53 @@ export interface User {
   isFaciallyVerified?: boolean;
   isPremium?: boolean;
   isBetaTester?: boolean;
-  email?: string; // Descriptografado em memória
-  sessionToken?: string; // JWT
+  email?: string;
+  sessionToken?: string;
+  notificationPrefs?: NotificationPrefs;
+  betaNotifications?: boolean;
+  // MongoDB Context
+  interests: string[];
+  viewedContent: string[];
 }
 
-// Tabela: Conteudos
+export interface PostAlgoMetadata {
+  interesse_comum: number; // 0-1
+  engajamento_amigo: number; // 0-1
+  recencia: number; // 0-1
+  viralidade: number; // 0-1
+  interesse_usuario: number; // 0-1
+  novidade: number; // 0-1
+}
+
 export interface Post {
   id: string;
   autor_id: string;
   username: string;
   userAvatar: string;
   content: string;
+  category: string;
   conteudo_encrypted?: EncryptedPayload;
   media: string[];
   type: 'image' | 'video' | 'carousel';
   likes: number;
   comments: number;
-  timestamp: string;
-  stats?: PostStats;
+  shares: number;
+  createdAt: string; // ISO Date
+  trendingScore: number;
+  timestamp: string; // Display
   isVerified?: boolean;
+  scores?: {
+    amigos: number;
+    explorar: number;
+    final: number;
+    breakdown: {
+      interest: number;
+      engagement: number;
+      recency: number;
+      trending: number;
+      diversity: number;
+    };
+  };
 }
 
 export interface PostStats {
@@ -66,13 +104,6 @@ export interface AdCategoryConfig {
   casino: boolean; 
 }
 
-export interface NotificationPrefs {
-  performance: boolean;
-  educational: boolean;
-  security: boolean;
-  community: boolean;
-}
-
 export interface Ad {
   id: string;
   type: 'ad';
@@ -82,7 +113,7 @@ export interface Ad {
   media: string;
   ctaLabel: string;
   ctaUrl: string;
-  category: 'Educação' | 'Tecnologia' | 'Ferramentas' | 'Investimentos' | 'Marca';
+  category: string;
 }
 
 export type FeedItem = (Post | Ad);

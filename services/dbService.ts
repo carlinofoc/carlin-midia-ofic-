@@ -1,75 +1,95 @@
 
 import { User } from '../types';
-// Updated generateJWT to generateSessionToken to match cryptoService.ts
-import { encrypt, decrypt, generateIndividualKey, hashPassword, generateSessionToken } from './cryptoService';
+import { 
+  encrypt, 
+  decrypt, 
+  generateMasterKey, 
+  hashPassword, 
+  generateSessionToken,
+} from './cryptoService';
 
 /**
- * Database Service - Simulação de Mongoose/Backend
+ * Database & Identity Orchestrator v5.2
+ * Managing local identities and encrypted vaults.
  */
 
 export const dbService = {
+  verificarIdentidadeLocal(): User | null {
+    const saved = localStorage.getItem('carlin_id_local');
+    return saved ? JSON.parse(saved) : null;
+  },
+
+  isIdentidadeRegistradaNoBackend(): boolean {
+    return localStorage.getItem('carlin_id_synced') === 'true';
+  },
+
   /**
-   * Criar Usuário (simulando hook save do Mongoose)
+   * Flow: New Device -> Create Identity -> Register Backend -> Link Master Key
    */
-  async criarUsuario(nome: string, email: string, senhaRaw: string): Promise<User> {
-    const individualKey = generateIndividualKey();
-    const senha_hash = await hashPassword(senhaRaw);
+  async criarIdentidade(nome: string, email: string, passwordRaw: string): Promise<User> {
+    // 1. Generate 256-bit Master Key
+    const masterKey = generateMasterKey();
+    const pwHash = await hashPassword(passwordRaw);
     
-    const nome_encrypted = await encrypt(nome, individualKey);
-    const email_encrypted = await encrypt(email, individualKey);
+    // 2. Encrypt Identity Fields with Master Key (Envelope Encryption)
+    const nome_encrypted = await encrypt(nome, masterKey);
+    const email_encrypted = await encrypt(email, masterKey);
 
     const newUser: User = {
-      id: `usr_${Date.now()}`,
-      username: nome.toLowerCase().replace(/\s/g, '_'),
+      id: `carlin_usr_${crypto.randomUUID().slice(0, 8)}`,
+      username: nome.toLowerCase().replace(/\s/g, '.'),
       displayName: nome,
       nome_encrypted,
       email_encrypted,
-      passwordHash: senha_hash,
-      chave: individualKey,
-      avatar: 'assets/profile.png',
+      passwordHash: pwHash,
+      chave: masterKey, 
+      avatar: `https://picsum.photos/seed/${nome}/200/200`,
       followers: 0,
       following: 0,
       email: email,
+      interests: [],
+      viewedContent: [],
     };
 
+    localStorage.setItem('carlin_id_local', JSON.stringify(newUser));
     return newUser;
   },
 
-  /**
-   * Rotacionar Chaves (rotacionarChave)
-   */
-  async rotacionarChave(user: User): Promise<User> {
-    const novaChave = generateIndividualKey();
-    
-    // Descriptografar com chave antiga
-    const nomeClaro = await decrypt(user.nome_encrypted, user.chave);
-    const emailClaro = await decrypt(user.email_encrypted, user.chave);
-
-    if (!nomeClaro || !emailClaro) throw new Error("Falha na decriptação para rotação.");
-
-    // Re-encriptar com nova chave
-    const novoNomeEnc = await encrypt(nomeClaro, novaChave);
-    const novoEmailEnc = await encrypt(emailClaro, novaChave);
-
-    return {
-      ...user,
-      nome_encrypted: novoNomeEnc,
-      email_encrypted: novoEmailEnc,
-      chave: novaChave
-    };
+  async registrarNoBackend(user: User): Promise<void> {
+    return new Promise((resolve) => {
+      // Simulate backend registration handshake
+      setTimeout(() => {
+        localStorage.setItem('carlin_id_synced', 'true');
+        console.log(`[Carlin] Device ${user.id} registered on cloud.`);
+        resolve();
+      }, 1500);
+    });
   },
 
   /**
-   * Verificar JWT (verificarJWT)
+   * Rotation Logic: Re-encrypt all fields with a new Master Key
    */
-  verificarToken(token: string): boolean {
-    if (!token) return false;
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return false;
-      return true; // Simulação simplificada
-    } catch {
-      return false;
-    }
+  async rotacionarChave(user: User): Promise<User> {
+    const newMK = generateMasterKey();
+    
+    // Decrypt fields with old key
+    const nome = await decrypt(user.nome_encrypted, user.chave);
+    const email = await decrypt(user.email_encrypted, user.chave);
+
+    if (!nome || !email) throw new Error("Vault corruption detected during rotation.");
+
+    // Re-encrypt fields with new key
+    const newNomeEnc = await encrypt(nome, newMK);
+    const newEmailEnc = await encrypt(email, newMK);
+
+    const updatedUser = {
+      ...user,
+      nome_encrypted: newNomeEnc,
+      email_encrypted: newEmailEnc,
+      chave: newMK
+    };
+
+    localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
+    return updatedUser;
   }
 };

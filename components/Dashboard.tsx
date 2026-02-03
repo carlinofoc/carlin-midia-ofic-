@@ -14,7 +14,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, posts, onBack, onOpenRoadma
   // Cálculos simulados para métricas humanas
   const totalLikes = posts.reduce((acc, p) => acc + p.likes, 0);
   const totalComments = posts.reduce((acc, p) => acc + p.comments, 0);
-  const totalSaves = posts.reduce((acc, p) => acc + (p.stats?.saves || 0), 0);
+  // Fix: Property 'stats' does not exist on type 'Post', defaulting to 0
+  const totalSaves = 0;
   const reachedPeople = (totalLikes * 8) + (totalComments * 15) + (totalSaves * 25) + 420;
 
   return (

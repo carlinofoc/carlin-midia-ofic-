@@ -1,46 +1,39 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, User, Post, Story, FeedMode, FeedFormatPreference, FeedItem, Ad, AdCategoryConfig, NotificationPrefs } from './types';
+
+import React, { useState, useEffect } from 'react';
+import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig } from './types';
 import { Icons } from './constants';
 import Feed from './components/Feed';
-import Explore from './components/Explore';
-import Reels from './components/Reels';
-import Messages from './components/Messages';
 import Profile from './components/Profile';
 import CreatePost from './components/CreatePost';
 import Stories from './components/Stories';
 import TermsOfUse from './components/TermsOfUse';
-import PrivacyPolicy from './components/PrivacyPolicy';
-import DownloadPage from './components/DownloadPage';
 import Registration from './components/Registration';
 import Login from './components/Login';
-import ReachInfo from './components/ReachInfo';
-import NotificationSystem from './components/NotificationSystem';
 import Dashboard from './components/Dashboard';
 import VerificationProcess from './components/VerificationProcess';
-import BiometricPolicy from './components/BiometricPolicy';
 import AdControlPanel from './components/AdControlPanel';
 import MonetizationManifesto from './components/MonetizationManifesto';
 import BetaCenter from './components/BetaCenter';
 import CreatorPlus from './components/CreatorPlus';
-import BetaTerms from './components/BetaTerms';
 import Roadmap from './components/Roadmap';
-import CreatorPlusFAQ from './components/CreatorPlusFAQ';
-import MonetizationInfo from './components/MonetizationInfo';
-import CancelSubscription from './components/CancelSubscription';
 import NotificationSettings from './components/NotificationSettings';
 import DeveloperInfo from './components/DeveloperInfo';
 import DeveloperManifesto from './components/DeveloperManifesto';
 import AdvancedSettings from './components/AdvancedSettings';
 import SecurityCenter from './components/SecurityCenter';
+import CombinedBanner from './components/CombinedBanner';
+import { rankFeed } from './services/algorithmService';
+import { dbService } from './services/dbService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
   const [feedMode, setFeedMode] = useState<FeedMode>('relevance');
-  const [formatPreference, setFormatPreference] = useState<FeedFormatPreference>('balanced');
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showReachInfo, setShowReachInfo] = useState(false);
+  const [isCombinedBannerVisible, setIsCombinedBannerVisible] = useState<boolean>(() => {
+    return localStorage.getItem('carlin_combined_banner_dismissed') !== 'true';
+  });
   
   const [showInstaBanner, setShowInstaBanner] = useState<boolean>(() => {
     return localStorage.getItem('carlin_insta_banner_closed') !== 'true';
@@ -59,17 +52,22 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Efeito para carregar sessão existente
+  // Carlin Boot Flow v5.2
   useEffect(() => {
-    const saved = localStorage.getItem('carlin_user');
+    const identity = dbService.verificarIdentidadeLocal();
     const sessionActive = sessionStorage.getItem('carlin_session') === 'true';
-    if (saved && sessionActive) {
-      setCurrentUser(JSON.parse(saved));
+
+    if (!identity) {
+      setCurrentView('register');
+    } else if (sessionActive) {
+      setCurrentUser(identity);
       setIsAuthenticated(true);
+      setCurrentView('feed');
+    } else {
+      setCurrentView('login');
     }
   }, []);
 
-  // Configuração inicial de anúncios
   const [adConfig, setAdConfig] = useState<AdCategoryConfig>(() => {
     const saved = localStorage.getItem('carlin_ad_config');
     return saved ? JSON.parse(saved) : {
@@ -87,63 +85,50 @@ const App: React.FC = () => {
     localStorage.setItem('carlin_dark_mode', darkMode.toString());
     localStorage.setItem('carlin_ad_config', JSON.stringify(adConfig));
     
+    if (!isAuthenticated || !currentUser) return;
+
     const loadLimit = liteMode ? 15 : 40;
+    const categories = ["Marketing Digital", "Estratégia", "Growth", "Design", "Monetização", "Storytelling", "AI"];
     
     const generatedPosts: Post[] = Array.from({ length: loadLimit }).map((_, i) => {
-      const isFollower = i < (loadLimit * 0.3); 
-      const category = ['Estratégia', 'Growth', 'Design', 'Monetização', 'Storytelling'][i % 5];
-      const type: 'image' | 'video' | 'carousel' = i % 3 === 0 ? 'video' : (i % 3 === 1 ? 'carousel' : 'image');
-      const relevanceScore = Math.floor(Math.random() * 35) + 65; 
-      const isSuspicious = i % 10 === 0 && i !== 0; 
-      const isVerified = i % 4 === 0 && !isSuspicious;
+      const category = categories[i % categories.length];
+      const createdDate = new Date();
+      createdDate.setHours(createdDate.getHours() - (i * 2));
 
-      // Corrected 'userId' to 'autor_id' and ensured all required Post properties are present
       return {
-        id: `unified-${i}`,
+        id: `post-${i}`,
         autor_id: `u-${i}`,
-        username: isSuspicious ? `carlin_copia_${i}` : (isFollower ? `criador_parceiro_${i}` : `expert_relevante_${i}`),
-        userAvatar: `https://picsum.photos/seed/unified-${i}/150/150`,
-        content: isSuspicious ? "GANHE SEGUIDORES GRÁTIS!" : `Masterclass em ${category}. Valor real para seu perfil.`,
-        media: type === 'video' 
-          ? ['https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-dancing-2322-large.mp4'] 
-          : [`https://picsum.photos/seed/unified-media-${i}/1080/1080`],
-        type,
-        likes: isSuspicious ? 12 : Math.floor(Math.random() * 12000),
-        comments: isSuspicious ? 2 : Math.floor(Math.random() * 450),
+        username: `expert_${i}`,
+        userAvatar: `https://picsum.photos/seed/post-${i}/150/150`,
+        content: `Conteúdo estratégico sobre ${category}. Insights de valor real para criadores.`,
+        category,
+        media: [`https://picsum.photos/seed/media-${i}/1080/1080`],
+        type: 'image',
+        likes: Math.floor(Math.random() * 500),
+        comments: Math.floor(Math.random() * 50),
+        shares: Math.floor(Math.random() * 20),
+        createdAt: createdDate.toISOString(),
+        trendingScore: Math.floor(Math.random() * 100),
         timestamp: `${i + 1}h atrás`,
-        category: category,
-        isFromFollower: isFollower,
-        stats: {
-          followerReach: isSuspicious ? 0 : Math.floor(Math.random() * 1000),
-          nonFollowerReach: isSuspicious ? 0 : Math.floor(Math.random() * 5000),
-          relevanceScore: isSuspicious ? 15 : relevanceScore,
-          engagementRate: isSuspicious ? 0.1 : parseFloat((Math.random() * 18 + 7).toFixed(1)),
-          saves: isSuspicious ? 0 : Math.floor(Math.random() * 1200),
-          shares: isSuspicious ? 0 : Math.floor(Math.random() * 400),
-          isContinuousCirculation: !isSuspicious && relevanceScore > 80
-        },
-        userRiskLevel: isSuspicious ? 'medium' : undefined,
-        isSuspicious: isSuspicious,
-        isVerified: isVerified
+        isVerified: i % 5 === 0
       } as Post;
     });
 
-    setFeedItems(generatedPosts);
+    const rankedItems = rankFeed(generatedPosts, currentUser);
+    setFeedItems(rankedItems);
 
     const initialStories: Story[] = Array.from({ length: 12 }).map((_, i) => ({
       id: `story-${i}`,
       userId: `s-${i}`,
-      username: `criador_${i}`,
+      username: `user_${i}`,
       userAvatar: `https://picsum.photos/seed/story-${i}/100/100`,
       media: `https://picsum.photos/seed/sm-${i}/1080/1920`,
       viewed: i > 8
     }));
     setStories(initialStories);
-  }, [liteMode, darkMode, adConfig]);
+  }, [liteMode, darkMode, adConfig, isAuthenticated, currentUser]);
 
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
-    localStorage.setItem('carlin_user', JSON.stringify(user));
-    localStorage.setItem('carlin_lite_mode', startLite.toString());
     sessionStorage.setItem('carlin_session', 'true');
     setLiteMode(startLite);
     setCurrentUser(user);
@@ -165,13 +150,9 @@ const App: React.FC = () => {
     setCurrentView('login');
   };
 
-  const handleUpdateUser = (updatedUser: User) => {
-    setCurrentUser(updatedUser);
-    localStorage.setItem('carlin_user', JSON.stringify(updatedUser));
-  };
-
   const renderView = () => {
-    if (!hasAcceptedTerms) return <TermsOfUse onAccept={() => setHasAcceptedTerms(true)} showAcceptButton={true} />;
+    if (!hasAcceptedTerms) return <TermsOfUse onAccept={() => { setHasAcceptedTerms(true); localStorage.setItem('carlin_terms_accepted', 'true'); }} showAcceptButton={true} />;
+    
     if (!isAuthenticated) {
         if (currentView === 'register') return <Registration onComplete={handleRegistrationComplete} onNavigateToLogin={() => setCurrentView('login')} />;
         return <Login onLogin={handleLoginComplete} onNavigateToRegister={() => setCurrentView('register')} />;
@@ -194,7 +175,7 @@ const App: React.FC = () => {
         <Profile 
           user={currentUser!} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} 
           isLite={liteMode} onToggleLite={() => setLiteMode(!liteMode)} isDark={darkMode} onToggleDark={() => setDarkMode(!darkMode)}
-          onOpenDashboard={() => setCurrentView('dashboard')} onOpenVerification={() => setCurrentView('verification')} onUpdateUser={handleUpdateUser}
+          onOpenDashboard={() => setCurrentView('dashboard')} onOpenVerification={() => setCurrentView('verification')} onUpdateUser={(u) => setCurrentUser(u)}
           onOpenAdControls={() => setCurrentView('ad_controls')} onOpenManifesto={() => setCurrentView('monetization_manifesto')} onOpenBetaCenter={() => setCurrentView('beta_center')}
           onOpenCreatorPlus={() => setCurrentView('creator_plus')} onOpenRoadmap={() => setCurrentView('roadmap')} onOpenMonetizationInfo={() => setCurrentView('monetization_info')}
           onOpenNotificationSettings={() => setCurrentView('notification_settings')}
@@ -211,7 +192,7 @@ const App: React.FC = () => {
           onOpenSecurityCenter={() => setCurrentView('security_center')}
         />
       );
-      case 'security_center': return <SecurityCenter user={currentUser!} onBack={() => setCurrentView('advanced_settings')} />;
+      case 'security_center': return <SecurityCenter user={currentUser!} onBack={() => setCurrentView('advanced_settings')} onUpdateUser={(u) => setCurrentUser(u)} />;
       case 'dashboard': return <Dashboard user={currentUser!} posts={[]} onBack={() => setCurrentView('profile')} onOpenRoadmap={() => setCurrentView('roadmap')} />;
       case 'create': return <CreatePost onPostCreated={(p) => { setFeedItems([p, ...feedItems]); setCurrentView('feed'); }} onCancel={() => setCurrentView('feed')} />;
       default: return <Feed posts={feedItems} currentUser={currentUser!} />;
@@ -220,10 +201,14 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-black text-white' : 'bg-zinc-50 text-zinc-900'} flex flex-col lg:flex-row font-sans overflow-hidden transition-colors`}>
+      <CombinedBanner onClose={() => setIsCombinedBannerVisible(false)} />
+      
       {isAuthenticated && (
         <nav className={`hidden lg:flex flex-col w-72 border-r ${darkMode ? 'border-zinc-900 bg-black' : 'border-zinc-200 bg-white'} p-8 sticky top-0 h-screen gap-4`}>
           <div className="py-4 px-4 mb-6 flex items-center gap-3">
-             <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center overflow-hidden shadow-lg"><img src="assets/profile.png" className="w-full h-full object-cover" /></div>
+             <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center overflow-hidden shadow-lg">
+                <img src={currentUser?.avatar || 'assets/profile.png'} className="w-full h-full object-cover" />
+             </div>
              <h1 className="text-xl font-black italic tracking-tighter text-blue-500 uppercase">CARLIN</h1>
           </div>
           <NavButton icon={<Icons.Home className="w-6 h-6" />} label="Feed" active={currentView === 'feed'} onClick={() => setCurrentView('feed')} darkMode={darkMode} />
@@ -237,7 +222,7 @@ const App: React.FC = () => {
         </nav>
       )}
 
-      <main className="flex-1 overflow-y-auto h-screen scroll-smooth transition-colors">
+      <main className={`flex-1 overflow-y-auto h-screen scroll-smooth transition-colors ${isCombinedBannerVisible ? 'pt-[340px] md:pt-48' : ''}`}>
         {renderView()}
       </main>
 
@@ -246,7 +231,9 @@ const App: React.FC = () => {
           <button onClick={() => setCurrentView('feed')} className={`p-2 ${currentView === 'feed' ? 'text-blue-500' : 'text-zinc-500'}`}><Icons.Home className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('create')} className={`p-2 ${currentView === 'create' ? 'text-blue-500' : 'text-zinc-500'}`}><Icons.Plus className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('profile')} className={`p-2 ${currentView === 'profile' ? 'text-blue-500' : 'text-zinc-500'}`}>
-            <div className={`w-7 h-7 rounded-full overflow-hidden border ${currentView === 'profile' ? 'border-blue-500' : 'border-zinc-300'}`}><img src={currentUser?.avatar || 'assets/profile.png'} className="w-full h-full object-cover" /></div>
+            <div className={`w-7 h-7 rounded-full overflow-hidden border ${currentView === 'profile' ? 'border-blue-500' : 'border-zinc-300'}`}>
+               <img src={currentUser?.avatar || 'assets/profile.png'} className="w-full h-full object-cover" />
+            </div>
           </button>
         </nav>
       )}

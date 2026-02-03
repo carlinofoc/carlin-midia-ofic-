@@ -1,7 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, User, FeedItem, Ad } from '../types';
 import { Icons } from '../constants';
-import SuspiciousAlert from './SuspiciousAlert';
 import AdItem from './AdItem';
 
 interface FeedProps {
@@ -69,12 +69,10 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
             if ('type' in item && item.type === 'ad') {
               return <AdItem key={item.id} ad={item as Ad} />;
             }
-            // Corrected 'userId' to 'autor_id' as defined in Post interface
             const postItem = item as Post;
-            return <PostCard key={item.id} post={postItem} isOwnPost={postItem.autor_id === currentUser.id || postItem.autor_id === 'me'} currentUser={currentUser} />;
+            return <PostCard key={item.id} post={postItem} isOwnPost={postItem.autor_id === currentUser.id} currentUser={currentUser} />;
           })}
           
-          {/* Conscious End Message */}
           <div className="px-6 py-20 text-center space-y-6">
              <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center mx-auto border border-zinc-800">
                 <span className="text-blue-500">✨</span>
@@ -145,7 +143,7 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
   const isUserVerified = (isOwnPost && currentUser?.isFaciallyVerified) || (!isOwnPost && post.isVerified);
 
   return (
-    <article className="bg-transparent mb-10 border-b border-zinc-900/50 pb-8">
+    <article className="bg-transparent mb-10 border-b border-zinc-900/50 pb-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-full p-[2px] bg-zinc-800 shadow-lg">
@@ -157,12 +155,12 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
             <div className="flex items-center gap-1.5">
               <span className="font-black text-sm tracking-tight">{isOwnPost && currentUser?.displayName ? currentUser.displayName : post.username}</span>
               {isUserVerified && <Icons.Verified className="w-3.5 h-3.5" />}
+              <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-500 text-[7px] font-black rounded border border-zinc-700 uppercase tracking-tighter ml-1">
+                 {post.category}
+              </span>
             </div>
             <div className="flex items-center gap-1.5 mt-1">
                <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">{post.timestamp}</span>
-               {post.stats?.relevanceScore && post.stats.relevanceScore > 80 && (
-                  <span className="text-[7px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded font-black uppercase">Alta Relevância Unificada</span>
-               )}
             </div>
           </div>
         </div>
@@ -205,28 +203,43 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
             <span className="text-zinc-400">{post.content}</span>
           </p>
           
-          {isOwnPost && (
-            <div className="pt-4">
-              <button onClick={toggleInsights} className="text-[9px] font-black uppercase tracking-widest text-blue-500">
-                {showInsights ? 'Esconder Transparência' : 'Ver Métricas de Valor'}
-              </button>
-              {showInsights && post.stats && (
-                <div className="mt-3 p-4 bg-zinc-900 rounded-[2rem] border border-zinc-800 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                   <div className="flex justify-between items-center">
-                      <span className="text-[8px] font-black uppercase text-zinc-500">Impacto Social</span>
-                      <span className="text-[10px] font-black text-blue-500">{post.stats.relevanceScore} / 100</span>
-                   </div>
-                   <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${post.stats.relevanceScore}%` }}></div>
-                   </div>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="pt-4">
+            <button onClick={toggleInsights} className="text-[9px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica v4.8'}
+            </button>
+            {showInsights && post.scores && (
+              <div className="mt-3 p-6 bg-zinc-900 rounded-[2rem] border border-zinc-800 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                 <div className="grid grid-cols-2 gap-4">
+                    <InsightMetric label="Match Interesse" value={post.scores.breakdown.interest} color="bg-blue-500" />
+                    <InsightMetric label="Trending Score" value={post.scores.breakdown.trending} color="bg-orange-500" />
+                    <InsightMetric label="Recência (Vida)" value={post.scores.breakdown.recency} color="bg-green-500" />
+                    <InsightMetric label="Diversidade" value={post.scores.breakdown.diversity} color="bg-purple-500" />
+                 </div>
+
+                 <div className="pt-3 border-t border-zinc-800 flex justify-between items-center">
+                    <span className="text-[9px] font-black uppercase text-white">Score Combinado</span>
+                    <span className="text-xs font-black text-blue-500">{(post.scores.final * 10).toFixed(1)} Pts</span>
+                 </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </article>
   );
 };
+
+const InsightMetric = ({ label, value, color }: { label: string, value: number, color: string }) => (
+  <div className="space-y-1.5">
+    <div className="flex justify-between items-center">
+       <span className="text-[7px] font-black uppercase text-zinc-500">{label}</span>
+       <span className="text-[8px] font-black text-white">{(value * 10).toFixed(1)}</span>
+    </div>
+    <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+       <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${Math.min(1, value) * 100}%` }}></div>
+    </div>
+  </div>
+);
 
 export default Feed;

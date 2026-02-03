@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Post } from '../types';
 import { Icons } from '../constants';
@@ -36,7 +37,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onCancel }) => {
   const handleSubmit = () => {
     if (!selectedFile) return;
 
-    // Corrected 'userId' to 'autor_id' to match Post interface
+    // Corrected 'userId' to 'autor_id' and added missing required fields to match Post interface
     const newPost: Post = {
       id: Date.now().toString(),
       autor_id: 'me',
@@ -47,6 +48,11 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onCancel }) => {
       type: 'image',
       likes: 0,
       comments: 0,
+      // Fix: Add missing properties to satisfy Post interface
+      shares: 0,
+      category: 'Geral',
+      createdAt: new Date().toISOString(),
+      trendingScore: 0,
       timestamp: 'Just now'
     };
 

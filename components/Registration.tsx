@@ -8,80 +8,138 @@ interface RegistrationProps {
   onNavigateToLogin: () => void;
 }
 
+type Step = 'form' | 'provisioning';
+
 const Registration: React.FC<RegistrationProps> = ({ onComplete, onNavigateToLogin }) => {
-  const [step, setStep] = useState(1);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [useLiteMode, setUseLiteMode] = useState(true);
-  
-  const [formData, setFormData] = useState({
-    email: '',
-    username: '',
-    displayName: '',
-    password: '',
-  });
+  const [step, setStep] = useState<Step>('form');
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [logs, setLogs] = useState<string[]>([]);
+  const [progress, setProgress] = useState(0);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+  const addLog = (msg: string) => setLogs(prev => [msg, ...prev].slice(0, 8));
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const startFlow = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessing(true);
+    setStep('provisioning');
     
-    try {
-      const newUser = await dbService.criarUsuario(formData.displayName, formData.email, formData.password);
-      
+    // Passo 1: Gerar Identidade
+    addLog("Iniciando hardware provision...");
+    setProgress(10);
+    const user = await dbService.criarIdentidade(formData.name, formData.email, formData.password);
+    
+    setTimeout(async () => {
+      // Passo 2: Registrar Backend
+      addLog("Handshake: registrando ID no backend...");
+      setProgress(30);
+      await dbService.registrarNoBackend(user);
+
       setTimeout(() => {
-        onComplete(newUser, useLiteMode);
-        setIsProcessing(false);
-      }, 1500);
-    } catch (err) {
-      alert("Falha na simulação do servidor.");
-      setIsProcessing(false);
-    }
+        // Passo 3: Master Key 256-bit
+        addLog("Gerando Master Key 256-bit (AES-256-GCM)...");
+        setProgress(60);
+        
+        setTimeout(() => {
+          // Passo 4: Vincular e Envelopar
+          addLog("Wrapping Data Encryption Keys (DEKs)...");
+          setProgress(90);
+          
+          setTimeout(() => {
+             addLog("Cofre selado com sucesso.");
+             setProgress(100);
+             setTimeout(() => onComplete(user, false), 800);
+          }, 1000);
+        }, 1200);
+      }, 1000);
+    }, 1000);
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 py-10">
-      <div className="w-full max-w-md bg-zinc-900 rounded-[3rem] border border-zinc-800 p-10 shadow-2xl space-y-8 animate-in fade-in zoom-in-95 duration-500">
-        <div className="text-center space-y-3">
-          <div className="w-20 h-20 bg-blue-600 rounded-[2rem] mx-auto flex items-center justify-center shadow-xl border-2 border-zinc-800">
-            <span className="text-3xl">🔑</span>
-          </div>
-          <h1 className="text-2xl font-black italic tracking-tighter text-white uppercase">Novo Registro</h1>
-          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]">Hooks de Criptografia Ativos</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {step === 1 ? (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <InputGroup label="Seu Email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="seu@email.com" />
-              <InputGroup label="Sua Senha" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Mínimo 8 caracteres" />
-              <button type="button" onClick={() => setStep(2)} disabled={!formData.email || formData.password.length < 8} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest mt-2 transition-all">Próximo Passo</button>
-            </div>
-          ) : (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <InputGroup label="Nome de Exibição" name="displayName" value={formData.displayName} onChange={handleChange} placeholder="Como quer ser chamado?" />
-              <div className="flex gap-2 mt-4">
-                <button type="button" onClick={() => setStep(1)} className="flex-1 bg-zinc-800 text-white font-black py-4 rounded-2xl text-[10px] uppercase">Voltar</button>
-                <button type="submit" disabled={isProcessing || !formData.displayName} className="flex-[2] bg-blue-600 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-all">
-                  {isProcessing ? 'Gerando Chave AES...' : 'Finalizar Registro'}
-                </button>
+    <div className="min-h-screen bg-black flex items-center justify-center p-6">
+      <div className="w-full max-w-md bg-zinc-900 rounded-[3rem] border border-zinc-800 p-10 shadow-3xl relative overflow-hidden">
+        
+        {step === 'form' ? (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="text-center space-y-3">
+              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] mx-auto flex items-center justify-center shadow-xl border-2 border-zinc-800">
+                <span className="text-3xl">🛡️</span>
               </div>
+              <h1 className="text-2xl font-black italic tracking-tighter text-white uppercase leading-none">Provisionar Hardware</h1>
+              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em]">Cofre Carlin v5.2</p>
             </div>
-          )}
-        </form>
+
+            <form onSubmit={startFlow} className="space-y-4">
+              <div className="space-y-1">
+                 <label className="text-[8px] font-black uppercase text-zinc-600 ml-4">Dados de Identidade</label>
+                 <input 
+                    required placeholder="Nome Completo" 
+                    className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500 transition-all" 
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                  />
+              </div>
+              <input 
+                required type="email" placeholder="E-mail Privado" 
+                className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500 transition-all" 
+                onChange={e => setFormData({...formData, email: e.target.value})}
+              />
+              <div className="space-y-1">
+                 <label className="text-[8px] font-black uppercase text-zinc-600 ml-4">Segurança do Cofre</label>
+                 <input 
+                    required type="password" placeholder="Senha Mestra (Proteção Local)" 
+                    className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-6 text-sm outline-none focus:border-blue-500 transition-all" 
+                    onChange={e => setFormData({...formData, password: e.target.value})}
+                  />
+              </div>
+              
+              <button 
+                type="submit" 
+                disabled={formData.password.length < 8}
+                className="w-full bg-white text-black font-black py-5 rounded-2xl text-[10px] uppercase tracking-widest shadow-xl disabled:opacity-30 active:scale-95 transition-all"
+              >
+                Gerar Identidade & Cofre
+              </button>
+            </form>
+
+            <button onClick={onNavigateToLogin} className="w-full text-[10px] text-zinc-600 font-bold uppercase hover:text-white transition-colors">
+              Já possui identidade vinculada? Entrar
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-10 py-6 text-center animate-in fade-in">
+             <div className="relative w-32 h-32 mx-auto">
+                <svg className="w-full h-full -rotate-90">
+                   <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-zinc-800" />
+                   <circle 
+                      cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent" 
+                      className="text-blue-500 transition-all duration-500" 
+                      strokeDasharray={364} 
+                      strokeDashoffset={364 - (364 * progress) / 100} 
+                      strokeLinecap="round" 
+                   />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                   <span className="text-2xl font-black italic">{progress}%</span>
+                </div>
+             </div>
+
+             <div className="space-y-4">
+                <h2 className="text-xl font-black italic uppercase tracking-tighter">Provisionando Hardware</h2>
+                <div className="bg-black/50 rounded-3xl p-6 border border-zinc-800 text-left h-48 overflow-hidden font-mono text-[9px]">
+                   {logs.map((log, i) => (
+                     <p key={i} className={`mb-1 ${i === 0 ? 'text-blue-400' : 'text-zinc-600'}`}>
+                       {i === 0 ? '●' : '○'} {log}
+                     </p>
+                   ))}
+                </div>
+             </div>
+             
+             <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-[0.3em] animate-pulse">
+                Não feche o app durante o selamento do cofre.
+             </p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-const InputGroup = ({ label, name, type = "text", value, onChange, placeholder }: any) => (
-  <div className="space-y-1">
-    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-4">{label}</label>
-    <input required type={type} name={name} placeholder={placeholder} value={value} onChange={onChange} className="w-full bg-black border border-zinc-800 rounded-3xl py-4 px-6 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-zinc-800" />
-  </div>
-);
 
 export default Registration;

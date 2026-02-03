@@ -19,6 +19,9 @@ const MOCK_CHATS: Chat[] = [
       email_encrypted: { encrypted: '', iv: '', tag: '' },
       passwordHash: '',
       chave: '',
+      // Fix: Add missing properties interests and viewedContent
+      interests: [],
+      viewedContent: []
     },
     lastMessage: 'Check out the new NFT drop!',
     messages: [
@@ -40,6 +43,9 @@ const MOCK_CHATS: Chat[] = [
       email_encrypted: { encrypted: '', iv: '', tag: '' },
       passwordHash: '',
       chave: '',
+      // Fix: Add missing properties interests and viewedContent
+      interests: [],
+      viewedContent: []
     },
     lastMessage: 'I am here to help you!',
     messages: [
