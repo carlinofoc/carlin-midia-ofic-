@@ -99,6 +99,7 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
 
 const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }> = ({ post, isOwnPost, currentUser }) => {
   const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes);
   const [showInsights, setShowInsights] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -106,10 +107,24 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
 
   const toggleInsights = () => setShowInsights(!showInsights);
 
+  const toggleLike = () => {
+    if (liked) {
+      setLikesCount(prev => prev - 1);
+    } else {
+      setLikesCount(prev => prev + 1);
+      setShowHeart(true);
+      setTimeout(() => setShowHeart(false), 800);
+    }
+    setLiked(!liked);
+  };
+
   const handleDoubleClick = () => {
-    if (!liked) setLiked(true);
-    setShowHeart(true);
-    setTimeout(() => setShowHeart(false), 800);
+    if (!liked) {
+      toggleLike();
+    } else {
+      setShowHeart(true);
+      setTimeout(() => setShowHeart(false), 800);
+    }
   };
 
   const toggleVideo = () => {
@@ -164,6 +179,11 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
             </div>
           </div>
         </div>
+        <div className="px-2 py-1 bg-zinc-900 rounded-lg border border-zinc-800">
+          <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest">
+            {post.type === 'video' ? '🎬 RIO' : '🖼️ POST'}
+          </span>
+        </div>
       </div>
 
       <div className="relative aspect-square bg-zinc-900 overflow-hidden shadow-2xl" onDoubleClick={handleDoubleClick}>
@@ -189,7 +209,7 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
       <div className="px-5 pt-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <button onClick={() => setLiked(!liked)} className={`transition-all ${liked ? 'text-red-500' : 'text-white'}`}><Icons.Heart filled={liked} className="w-7 h-7" /></button>
+            <button onClick={toggleLike} className={`transition-all ${liked ? 'text-red-500' : 'text-white'}`}><Icons.Heart filled={liked} className="w-7 h-7" /></button>
             <button className="text-white"><Icons.Comment className="w-7 h-7" /></button>
             <button className="text-white"><Icons.Share className="w-7 h-7" /></button>
           </div>
@@ -197,7 +217,7 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
         </div>
 
         <div className="space-y-1">
-          <p className="text-sm font-black tracking-tight">{post.likes.toLocaleString()} Curtidas</p>
+          <p className="text-sm font-black tracking-tight">{likesCount.toLocaleString()} Curtidas</p>
           <p className="text-sm leading-relaxed">
             <span className="font-black mr-2 tracking-tight">{isOwnPost && currentUser?.displayName ? currentUser.displayName : post.username}</span>
             <span className="text-zinc-400">{post.content}</span>
@@ -206,7 +226,7 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
           <div className="pt-4">
             <button onClick={toggleInsights} className="text-[9px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica v4.8'}
+              {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica v5.2'}
             </button>
             {showInsights && post.scores && (
               <div className="mt-3 p-6 bg-zinc-900 rounded-[2rem] border border-zinc-800 space-y-4 animate-in slide-in-from-top-2 duration-300">
@@ -214,7 +234,7 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
                     <InsightMetric label="Match Interesse" value={post.scores.breakdown.interest} color="bg-blue-500" />
                     <InsightMetric label="Trending Score" value={post.scores.breakdown.trending} color="bg-orange-500" />
                     <InsightMetric label="Recência (Vida)" value={post.scores.breakdown.recency} color="bg-green-500" />
-                    <InsightMetric label="Diversidade" value={post.scores.breakdown.diversity} color="bg-purple-500" />
+                    <InsightMetric label="Conexão Seguindo" value={post.scores.amigos} color="bg-purple-500" />
                  </div>
 
                  <div className="pt-3 border-t border-zinc-800 flex justify-between items-center">
