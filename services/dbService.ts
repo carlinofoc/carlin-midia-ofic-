@@ -49,6 +49,13 @@ export const dbService = {
       email: email,
       interests: [],
       viewedContent: [],
+      links: [
+        { id: 'lnk_1', title: "Instagram oficial", url: "https://instagram.com/usuario", clicks: 0 },
+        { id: 'lnk_2', title: "Canal do YouTube", url: "https://youtube.com/usuario", clicks: 0 },
+        { id: 'lnk_3', title: "Perfil Profissional", url: "https://linkedin.com/in/usuario", clicks: 0 },
+        { id: 'lnk_4', title: "Grupo VIP", url: "https://exemplo.com/grupovip", clicks: 0 },
+        { id: 'lnk_5', title: "Site Pessoal", url: "https://exemplo.com", clicks: 0 }
+      ]
     };
 
     localStorage.setItem('carlin_id_local', JSON.stringify(newUser));
@@ -64,6 +71,36 @@ export const dbService = {
         resolve();
       }, 1500);
     });
+  },
+
+  /**
+   * Tracks a link click by calling the backend endpoint.
+   * Logic matches: router.post("/click/:userId/:linkId", ...)
+   */
+  async trackLinkClick(userId: string, linkId: string): Promise<void> {
+    console.log(`[Carlin API] POST /click/${userId}/${linkId}`);
+    
+    try {
+      // Implementation for real backend connectivity:
+      /*
+      await fetch(`/click/${userId}/${linkId}`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      */
+      
+      // Local Simulation Logic:
+      const localUser = this.verificarIdentidadeLocal();
+      if (localUser && localUser.links) {
+        const updatedLinks = localUser.links.map(l => 
+          l.id === linkId ? { ...l, clicks: (l.clicks || 0) + 1 } : l
+        );
+        const updatedUser = { ...localUser, links: updatedLinks };
+        localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error("[Carlin Tracking] Failed to register click:", error);
+    }
   },
 
   /**

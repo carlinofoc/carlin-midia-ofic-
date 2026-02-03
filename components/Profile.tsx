@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User, ProfileLink } from '../types';
 import { Icons } from '../constants';
 import EditProfilePhoto from './EditProfilePhoto';
 import EditBio from './EditBio';
+import EditLinks from './EditLinks';
+import { dbService } from '../services/dbService';
 
 interface ProfileProps {
   user: User;
@@ -33,9 +35,9 @@ const Profile: React.FC<ProfileProps> = ({
   onOpenDashboard, onOpenVerification, onUpdateUser, onOpenAdControls, onOpenManifesto, onOpenBetaCenter, onOpenCreatorPlus, onOpenRoadmap, onOpenMonetizationInfo, onOpenNotificationSettings, onOpenDeveloperInfo, onOpenDeveloperManifesto, onOpenAdvancedSettings
 }) => {
   const [tab, setTab] = useState<'posts' | 'saved' | 'tagged'>('posts');
-  const [showLiteHelp, setShowLiteHelp] = useState(false);
   const [showEditPhoto, setShowEditPhoto] = useState(false);
   const [showEditBio, setShowEditBio] = useState(false);
+  const [showEditLinks, setShowEditLinks] = useState(false);
 
   const containerClasses = isDark ? "bg-black text-white" : "bg-zinc-50 text-zinc-900";
   const cardClasses = isDark ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-sm";
@@ -49,6 +51,30 @@ const Profile: React.FC<ProfileProps> = ({
   const handleBioUpdate = (newBio: string) => {
     onUpdateUser({ ...user, bio: newBio });
     setShowEditBio(false);
+  };
+
+  const handleLinksUpdate = (newLinks: ProfileLink[]) => {
+    onUpdateUser({ ...user, links: newLinks });
+    setShowEditLinks(false);
+  };
+
+  /**
+   * Handles profile link clicks for analytics and persistence.
+   * Corresponds to backend: router.post("/click/:userId/:linkId")
+   */
+  const handleLinkClick = async (link: ProfileLink) => {
+    if (!link.id || !user.id) return;
+    
+    // Register the click in the backend/storage
+    await dbService.trackLinkClick(user.id, link.id);
+    
+    // Optimistically update the UI to show the new click count
+    if (user.links) {
+      const updatedLinks = user.links.map(l => 
+        l.id === link.id ? { ...l, clicks: (l.clicks || 0) + 1 } : l
+      );
+      onUpdateUser({ ...user, links: updatedLinks });
+    }
   };
 
   return (
@@ -124,6 +150,56 @@ const Profile: React.FC<ProfileProps> = ({
           </div>
         </div>
 
+        {/* Links do Perfil Section */}
+        <div className="space-y-3 pt-2">
+          <div className="flex justify-between items-center px-1">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Links do Perfil</h3>
+            <button 
+              onClick={() => setShowEditLinks(true)}
+              className="text-[9px] font-black uppercase text-zinc-500 hover:text-blue-500 transition-colors"
+            >
+              Editar Links
+            </button>
+          </div>
+          <div className="space-y-2">
+            {(user.links || []).length > 0 ? (
+              user.links?.map((link, idx) => (
+                <a 
+                  key={idx}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => handleLinkClick(link)}
+                  className={`block ${cardClasses} rounded-2xl p-4 transition-all hover:border-blue-500/50 group active:scale-[0.98] relative overflow-hidden`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <strong className="block text-xs font-black uppercase text-white mb-1 tracking-tight group-hover:text-blue-500 transition-colors truncate">
+                        {link.title}
+                      </strong>
+                      <span className="text-[11px] text-zinc-500 truncate block font-medium group-hover:text-zinc-400">
+                        {link.url}
+                      </span>
+                    </div>
+                    {link.clicks !== undefined && (
+                      <div className="bg-blue-600/10 border border-blue-500/20 px-2 py-0.5 rounded-lg ml-2 shrink-0">
+                         <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
+                           {link.clicks} {link.clicks === 1 ? 'clique' : 'cliques'}
+                         </span>
+                      </div>
+                    )}
+                  </div>
+                </a>
+              ))
+            ) : (
+              <div className="space-y-2 opacity-80">
+                <StaticLink label="Instagram oficial do criador" url="https://instagram.com/usuario" isDark={isDark} />
+                <StaticLink label="Canal do YouTube oficial" url="https://youtube.com/usuario" isDark={isDark} />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Main Actions */}
         <div className="space-y-3">
           <button 
@@ -142,39 +218,6 @@ const Profile: React.FC<ProfileProps> = ({
             <span className="text-xl">📊</span>
             <span className="text-xs font-black uppercase tracking-widest">Painel de Impacto</span>
           </button>
-
-          {!user.isFaciallyVerified && (
-            <button 
-              onClick={onOpenVerification}
-              className={`w-full ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all`}
-            >
-              <span className="text-xl">🛡️</span>
-              <span className="text-xs font-black uppercase tracking-widest">Obter Selo Verificado</span>
-            </button>
-          )}
-        </div>
-
-        {/* Development & Public Info */}
-        <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
-           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Configurações & Futuro</h3>
-           <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={onOpenNotificationSettings}
-                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
-              >
-                 <span className="text-xl">🔔</span>
-                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Notificações</p>
-                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Sua Atenção</p>
-              </button>
-              <button 
-                onClick={onOpenRoadmap}
-                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
-              >
-                 <span className="text-xl">🗺️</span>
-                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Roadmap</p>
-                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">O que virá</p>
-              </button>
-           </div>
         </div>
 
         {/* About App Section */}
@@ -193,43 +236,6 @@ const Profile: React.FC<ProfileProps> = ({
                     </div>
                  </div>
                  <svg className="w-5 h-5 text-zinc-600 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-              </button>
-
-              <button 
-                onClick={onOpenDeveloperManifesto}
-                className={`w-full p-6 rounded-[2rem] border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex items-center justify-between group hover:border-blue-500/30 transition-all shadow-xl`}
-              >
-                 <div className="flex items-center gap-4">
-                    <span className="text-2xl group-hover:scale-110 transition-transform">📜</span>
-                    <div className="text-left">
-                       <p className="text-[9px] font-black uppercase tracking-widest leading-none text-white">Nosso Manifesto</p>
-                       <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter mt-1">Ética e Valores Solo</p>
-                    </div>
-                 </div>
-                 <svg className="w-5 h-5 text-zinc-600 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-              </button>
-           </div>
-        </div>
-
-        {/* Ads & Ethics Section */}
-        <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
-           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Ética e Ads</h3>
-           <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={onOpenAdControls}
-                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
-              >
-                 <span className="text-xl">🎯</span>
-                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Filtro Ads</p>
-                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Escolha ver</p>
-              </button>
-              <button 
-                onClick={onOpenManifesto}
-                className={`p-4 rounded-2xl border ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex flex-col gap-2 text-left active:scale-[0.98] transition-all`}
-              >
-                 <span className="text-xl">📜</span>
-                 <p className="text-[9px] font-black uppercase tracking-widest leading-none">Estratégia</p>
-                 <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter">Monetização Justa</p>
               </button>
            </div>
         </div>
@@ -296,8 +302,27 @@ const Profile: React.FC<ProfileProps> = ({
           onCancel={() => setShowEditBio(false)}
         />
       )}
+
+      {showEditLinks && (
+        <EditLinks 
+          currentLinks={user.links || []}
+          onUpdate={handleLinksUpdate}
+          onCancel={() => setShowEditLinks(false)}
+        />
+      )}
     </div>
   );
 };
+
+const StaticLink = ({ label, url, isDark }: { label: string, url: string, isDark: boolean }) => (
+  <div className={`${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border rounded-2xl p-4 transition-all group cursor-default`}>
+    <strong className="block text-xs font-black uppercase text-white mb-1 tracking-tight group-hover:text-blue-500 transition-colors">
+      {label}
+    </strong>
+    <span className="text-[11px] text-blue-500 truncate block font-bold group-hover:text-blue-400">
+      {url}
+    </span>
+  </div>
+);
 
 export default Profile;

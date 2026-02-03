@@ -21,6 +21,13 @@ export interface NotificationPrefs {
   community: boolean;
 }
 
+export interface ProfileLink {
+  id?: string;
+  title: string;
+  url: string;
+  clicks?: number;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -43,6 +50,7 @@ export interface User {
   sessionToken?: string;
   notificationPrefs?: NotificationPrefs;
   betaNotifications?: boolean;
+  links?: ProfileLink[];
   // MongoDB Context
   interests: string[];
   viewedContent: string[];
