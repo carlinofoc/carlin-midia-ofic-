@@ -1,5 +1,5 @@
 
-import { User } from '../types';
+import { User, ProfileLink } from '../types';
 import { 
   encrypt, 
   decrypt, 
@@ -49,12 +49,11 @@ export const dbService = {
       email: email,
       interests: [],
       viewedContent: [],
+      totalRevenue: 0,
       links: [
-        { id: 'lnk_1', title: "Instagram oficial", url: "https://instagram.com/usuario", clicks: 0 },
-        { id: 'lnk_2', title: "Canal do YouTube", url: "https://youtube.com/usuario", clicks: 0 },
-        { id: 'lnk_3', title: "Perfil Profissional", url: "https://linkedin.com/in/usuario", clicks: 0 },
-        { id: 'lnk_4', title: "Grupo VIP", url: "https://exemplo.com/grupovip", clicks: 0 },
-        { id: 'lnk_5', title: "Site Pessoal", url: "https://exemplo.com", clicks: 0 }
+        { id: 'lnk_1', title: "Instagram oficial", url: "https://instagram.com/usuario", clicks: 42, views: 150, type: 'normal', status: 'active' },
+        { id: 'lnk_2', title: "Canal do YouTube", url: "https://youtube.com/usuario", clicks: 12, views: 200, type: 'normal', status: 'active' },
+        { id: 'lnk_4', title: "Curso de Marketing (Monetizado)", url: "https://exemplo.com/curso", clicks: 25, views: 80, type: 'monetized', status: 'active' }
       ]
     };
 
@@ -74,28 +73,43 @@ export const dbService = {
   },
 
   /**
-   * Tracks a link click by calling the backend endpoint.
-   * Logic matches: router.post("/click/:userId/:linkId", ...)
+   * Increments link views for all active links when profile is accessed.
+   */
+  async trackProfileView(userId: string): Promise<void> {
+    const localUser = this.verificarIdentidadeLocal();
+    if (localUser && localUser.links) {
+      const updatedLinks = localUser.links.map(l => ({
+        ...l,
+        views: (l.views || 0) + 1
+      }));
+      const updatedUser = { ...localUser, links: updatedLinks };
+      localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
+    }
+  },
+
+  /**
+   * Tracks a link click and handles simulated CPC monetization.
    */
   async trackLinkClick(userId: string, linkId: string): Promise<void> {
     console.log(`[Carlin API] POST /click/${userId}/${linkId}`);
     
     try {
-      // Implementation for real backend connectivity:
-      /*
-      await fetch(`/click/${userId}/${linkId}`, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      */
-      
-      // Local Simulation Logic:
       const localUser = this.verificarIdentidadeLocal();
       if (localUser && localUser.links) {
-        const updatedLinks = localUser.links.map(l => 
-          l.id === linkId ? { ...l, clicks: (l.clicks || 0) + 1 } : l
-        );
-        const updatedUser = { ...localUser, links: updatedLinks };
+        let revenueIncrement = 0;
+        const updatedLinks = localUser.links.map(l => {
+          if (l.id === linkId) {
+            if (l.type === 'monetized') revenueIncrement = 0.15; // R$ 0,15 per click
+            return { ...l, clicks: (l.clicks || 0) + 1 };
+          }
+          return l;
+        });
+
+        const updatedUser = { 
+          ...localUser, 
+          links: updatedLinks,
+          totalRevenue: (localUser.totalRevenue || 0) + revenueIncrement
+        };
         localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
       }
     } catch (error) {

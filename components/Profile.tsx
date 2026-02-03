@@ -58,24 +58,25 @@ const Profile: React.FC<ProfileProps> = ({
     setShowEditLinks(false);
   };
 
-  /**
-   * Handles profile link clicks for analytics and persistence.
-   * Corresponds to backend: router.post("/click/:userId/:linkId")
-   */
   const handleLinkClick = async (link: ProfileLink) => {
+    if (link.type === 'exclusive' && !user.isPremium) {
+      onOpenCreatorPlus();
+      return;
+    }
+
     if (!link.id || !user.id) return;
-    
-    // Register the click in the backend/storage
     await dbService.trackLinkClick(user.id, link.id);
     
-    // Optimistically update the UI to show the new click count
-    if (user.links) {
-      const updatedLinks = user.links.map(l => 
-        l.id === link.id ? { ...l, clicks: (l.clicks || 0) + 1 } : l
-      );
-      onUpdateUser({ ...user, links: updatedLinks });
+    // Refresh user state
+    const updatedUser = dbService.verificarIdentidadeLocal();
+    if (updatedUser) {
+      onUpdateUser(updatedUser);
     }
   };
+
+  const activeLinks = (user.links || []).filter(l => l.status === 'active');
+  const pinnedLink = activeLinks.find(l => l.type === 'pinned');
+  const otherLinks = activeLinks.filter(l => l.type !== 'pinned');
 
   return (
     <div className={`w-full max-w-2xl mx-auto pt-14 lg:pt-8 ${containerClasses} min-h-screen transition-colors pb-32`}>
@@ -116,14 +117,14 @@ const Profile: React.FC<ProfileProps> = ({
           <div className="flex flex-1 justify-around text-center">
             <div>
               <p className="font-black text-lg">12</p>
-              <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'} uppercase tracking-widest font-bold`}>Publicações</p>
+              <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'} uppercase tracking-widest font-bold`}>Posts</p>
             </div>
             <div>
-              <p className="font-black text-lg">0</p>
+              <p className="font-black text-lg">{user.followers.toLocaleString()}</p>
               <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'} uppercase tracking-widest font-bold`}>Seguidores</p>
             </div>
             <div>
-              <p className="font-black text-lg">0</p>
+              <p className="font-black text-lg">{user.following.toLocaleString()}</p>
               <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'} uppercase tracking-widest font-bold`}>Seguindo</p>
             </div>
           </div>
@@ -143,8 +144,23 @@ const Profile: React.FC<ProfileProps> = ({
             {isLite && <span className="bg-blue-500/20 text-blue-500 text-[8px] px-1.5 py-0.5 rounded font-black">LITE</span>}
             {user.isPremium && <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-blue-500 text-transparent bg-clip-text font-black">CRIADOR+</span>}
           </p>
+
+          {/* Pinned Link Spot */}
+          {pinnedLink && (
+            <div className="py-2">
+              <LinkCard 
+                link={pinnedLink} 
+                isDark={isDark} 
+                cardClasses={cardClasses} 
+                onClick={() => handleLinkClick(pinnedLink)}
+                isSmall={true}
+                isSubscriber={!!user.isPremium}
+              />
+            </div>
+          )}
+
           <div className="relative group">
-            <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'} leading-relaxed mt-2 whitespace-pre-wrap`}>
+            <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'} leading-relaxed mt-1 whitespace-pre-wrap`}>
               {user.bio || "Sem biografia ainda."}
             </p>
           </div>
@@ -153,45 +169,27 @@ const Profile: React.FC<ProfileProps> = ({
         {/* Links do Perfil Section */}
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-center px-1">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Links do Perfil</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Vínculos & Portfólio</h3>
             <button 
               onClick={() => setShowEditLinks(true)}
               className="text-[9px] font-black uppercase text-zinc-500 hover:text-blue-500 transition-colors"
             >
-              Editar Links
+              Gerenciar Links
             </button>
           </div>
-          <div className="space-y-2">
-            {(user.links || []).length > 0 ? (
-              user.links?.map((link, idx) => (
-                <a 
-                  key={idx}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleLinkClick(link)}
-                  className={`block ${cardClasses} rounded-2xl p-4 transition-all hover:border-blue-500/50 group active:scale-[0.98] relative overflow-hidden`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <strong className="block text-xs font-black uppercase text-white mb-1 tracking-tight group-hover:text-blue-500 transition-colors truncate">
-                        {link.title}
-                      </strong>
-                      <span className="text-[11px] text-zinc-500 truncate block font-medium group-hover:text-zinc-400">
-                        {link.url}
-                      </span>
-                    </div>
-                    {link.clicks !== undefined && (
-                      <div className="bg-blue-600/10 border border-blue-500/20 px-2 py-0.5 rounded-lg ml-2 shrink-0">
-                         <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
-                           {link.clicks} {link.clicks === 1 ? 'clique' : 'cliques'}
-                         </span>
-                      </div>
-                    )}
-                  </div>
-                </a>
+          <div className="space-y-3">
+            {otherLinks.length > 0 ? (
+              otherLinks.map((link) => (
+                <LinkCard 
+                  key={link.id} 
+                  link={link} 
+                  isDark={isDark} 
+                  cardClasses={cardClasses} 
+                  onClick={() => handleLinkClick(link)} 
+                  isSubscriber={!!user.isPremium}
+                />
               ))
-            ) : (
+            ) : !pinnedLink && (
               <div className="space-y-2 opacity-80">
                 <StaticLink label="Instagram oficial do criador" url="https://instagram.com/usuario" isDark={isDark} />
                 <StaticLink label="Canal do YouTube oficial" url="https://youtube.com/usuario" isDark={isDark} />
@@ -220,26 +218,6 @@ const Profile: React.FC<ProfileProps> = ({
           </button>
         </div>
 
-        {/* About App Section */}
-        <div className={`${cardClasses} rounded-2xl p-5 border space-y-4`}>
-           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Sobre o Aplicativo</h3>
-           <div className="space-y-3">
-              <button 
-                onClick={onOpenDeveloperInfo}
-                className={`w-full p-6 rounded-[2rem] border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-zinc-50 border-zinc-200'} flex items-center justify-between group hover:border-blue-500/30 transition-all shadow-xl`}
-              >
-                 <div className="flex items-center gap-4">
-                    <span className="text-2xl group-hover:scale-110 transition-transform">👨‍💻</span>
-                    <div className="text-left">
-                       <p className="text-[9px] font-black uppercase tracking-widest leading-none text-white">Bastidores do Carlin</p>
-                       <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-tighter mt-1">Conheça o Desenvolvedor</p>
-                    </div>
-                 </div>
-                 <svg className="w-5 h-5 text-zinc-600 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-              </button>
-           </div>
-        </div>
-
         {/* Buttons */}
         <div className="flex gap-2">
           <button 
@@ -252,7 +230,7 @@ const Profile: React.FC<ProfileProps> = ({
             onClick={onOpenCreatorPlus}
             className={`flex-1 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors active:scale-95 text-blue-500`}
           >
-            {user.isPremium ? 'Gestão Criador+' : 'Assinar Criador+'}
+            {user.isPremium ? 'Gestão Premium' : 'Assinar Premium'}
           </button>
         </div>
       </div>
@@ -283,34 +261,101 @@ const Profile: React.FC<ProfileProps> = ({
           <button onClick={onOpenTerms} className={`text-[10px] font-bold ${isDark ? 'text-zinc-600' : 'text-zinc-400'} uppercase tracking-widest hover:text-blue-500`}>Termos</button>
           <button onClick={onOpenPrivacy} className={`text-[10px] font-bold ${isDark ? 'text-zinc-600' : 'text-zinc-400'} uppercase tracking-widest hover:text-blue-500`}>Privacidade</button>
         </div>
-        <p className={`text-[9px] ${isDark ? 'text-zinc-800' : 'text-zinc-300'} uppercase tracking-[0.3em]`}>Carlin Mídia Oficial • v4.1 {isLite ? 'Lite' : 'Nativo'}</p>
+        <p className={`text-[9px] ${isDark ? 'text-zinc-800' : 'text-zinc-300'} uppercase tracking-[0.3em]`}>Carlin Mídia Oficial • v5.3 Native</p>
       </div>
       <div className="h-24"></div>
 
-      {showEditPhoto && (
-        <EditProfilePhoto 
-          currentAvatar={user.avatar || 'assets/profile.png'} 
-          onUpdate={handleAvatarUpdate} 
-          onCancel={() => setShowEditPhoto(false)} 
-        />
-      )}
-
-      {showEditBio && (
-        <EditBio 
-          currentBio={user.bio || ""}
-          onUpdate={handleBioUpdate}
-          onCancel={() => setShowEditBio(false)}
-        />
-      )}
-
-      {showEditLinks && (
-        <EditLinks 
-          currentLinks={user.links || []}
-          onUpdate={handleLinksUpdate}
-          onCancel={() => setShowEditLinks(false)}
-        />
-      )}
+      {showEditPhoto && <EditProfilePhoto currentAvatar={user.avatar || 'assets/profile.png'} onUpdate={handleAvatarUpdate} onCancel={() => setShowEditPhoto(false)} />}
+      {showEditBio && <EditBio currentBio={user.bio || ""} onUpdate={handleBioUpdate} onCancel={() => setShowEditBio(false)} />}
+      {showEditLinks && <EditLinks currentLinks={user.links || []} onUpdate={handleLinksUpdate} onCancel={() => setShowEditLinks(false)} />}
     </div>
+  );
+};
+
+const LinkCard: React.FC<{ 
+  link: ProfileLink; 
+  isDark: boolean; 
+  cardClasses: string; 
+  onClick: () => void | Promise<void>;
+  isSmall?: boolean;
+  isSubscriber: boolean;
+}> = ({ link, isDark, cardClasses, onClick, isSmall = false, isSubscriber }) => {
+  const isPinned = link.type === 'pinned';
+  const isMonetized = link.type === 'monetized';
+  const isExclusive = link.type === 'exclusive';
+  const isLocked = isExclusive && !isSubscriber;
+
+  const typeStyles = 
+    isPinned ? "border-blue-500/50 bg-blue-500/5 shadow-[0_0_20px_rgba(59,130,246,0.1)]" :
+    isMonetized ? "border-green-500/50 bg-green-500/5 shadow-[0_0_20px_rgba(34,197,94,0.1)]" :
+    isExclusive ? (isLocked ? "border-zinc-800 bg-zinc-900/50 opacity-90" : "border-purple-500/50 bg-purple-500/5 shadow-[0_0_20px_rgba(168,85,247,0.1)]") :
+    "";
+
+  if (isLocked) {
+    return (
+      <button 
+        onClick={onClick as any}
+        className={`w-full block ${cardClasses} rounded-[1.5rem] p-5 transition-all hover:border-zinc-700 active:scale-[0.98] group relative overflow-hidden border-2 ${typeStyles}`}
+      >
+        <div className="absolute top-0 right-0 p-2"><span className="text-[10px]">🔒</span></div>
+        <div className="flex flex-col items-center text-center space-y-2">
+          <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Conteúdo Exclusivo Carlin Lab</p>
+          <p className="text-xs font-black text-white uppercase italic tracking-tighter">Assine o Carlin Lab para acessar</p>
+        </div>
+      </button>
+    );
+  }
+
+  return (
+    <a 
+      href={link.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick as any}
+      className={`block ${cardClasses} rounded-[1.5rem] transition-all hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden border-2 ${typeStyles} ${isSmall ? 'p-3' : 'p-5'}`}
+    >
+      <div className="absolute top-0 right-0 p-2">
+        <span className="text-[10px]">
+          {isPinned && '📌'}
+          {isMonetized && '💰'}
+          {isExclusive && '🧪'}
+        </span>
+      </div>
+
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <strong className={`block font-black uppercase tracking-tight group-hover:text-blue-500 transition-colors truncate ${isSmall ? 'text-[11px]' : 'text-sm'} ${isExclusive ? 'text-purple-400' : isMonetized ? 'text-green-400' : 'text-white'}`}>
+              {link.title}
+            </strong>
+          </div>
+          {!isSmall && (
+            <div className="space-y-1">
+               <span className="text-[11px] text-zinc-500 truncate block font-medium group-hover:text-zinc-400">
+                 {link.url}
+               </span>
+               {isMonetized && (
+                 <span className="text-[8px] font-black uppercase text-green-500 tracking-widest flex items-center gap-1">
+                   <span className="w-1 h-1 rounded-full bg-green-500"></span> Link Monetizado
+                 </span>
+               )}
+               {isExclusive && (
+                 <span className="text-[8px] font-black uppercase text-purple-500 tracking-widest flex items-center gap-1">
+                   <span className="w-1 h-1 rounded-full bg-purple-500"></span> Carlin Lab Labs
+                 </span>
+               )}
+            </div>
+          )}
+        </div>
+        {link.clicks !== undefined && !isSmall && (
+          <div className="bg-zinc-900/50 border border-zinc-800 px-2 py-1 rounded-lg ml-2 shrink-0">
+             <span className="text-[8px] font-black text-zinc-500 uppercase tracking-tighter">
+               {link.clicks.toLocaleString()} {link.clicks === 1 ? 'click' : 'clicks'}
+             </span>
+          </div>
+        )}
+      </div>
+    </a>
   );
 };
 

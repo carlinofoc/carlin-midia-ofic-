@@ -3,6 +3,8 @@ export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admi
 export type FeedMode = 'followers' | 'discovery' | 'relevance';
 export type FeedFormatPreference = 'posts' | 'videos' | 'balanced';
 export type SubscriptionStatus = 'active' | 'canceled' | 'none';
+export type LinkType = 'normal' | 'pinned' | 'monetized' | 'exclusive';
+export type LinkStatus = 'active' | 'inactive';
 
 export interface EncryptedPayload {
   encrypted: string;
@@ -22,10 +24,13 @@ export interface NotificationPrefs {
 }
 
 export interface ProfileLink {
-  id?: string;
+  id: string;
   title: string;
   url: string;
-  clicks?: number;
+  clicks: number;
+  views: number;
+  type: LinkType;
+  status: LinkStatus;
 }
 
 export interface User {
@@ -51,6 +56,7 @@ export interface User {
   notificationPrefs?: NotificationPrefs;
   betaNotifications?: boolean;
   links?: ProfileLink[];
+  totalRevenue?: number;
   // MongoDB Context
   interests: string[];
   viewedContent: string[];
