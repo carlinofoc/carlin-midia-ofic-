@@ -11,6 +11,8 @@ interface CreatorPlusProps {
 }
 
 const CreatorPlus: React.FC<CreatorPlusProps> = ({ user, onSubscribe, onBack, onOpenFAQ, onOpenCancel }) => {
+  const isPremium = user.subscriptionStatus === 'active';
+
   return (
     <div className="min-h-screen bg-black text-white p-6 lg:p-12 animate-in fade-in duration-500 overflow-y-auto pb-32">
       <div className="max-w-2xl mx-auto space-y-12">
@@ -21,32 +23,32 @@ const CreatorPlus: React.FC<CreatorPlusProps> = ({ user, onSubscribe, onBack, on
             </svg>
           </button>
           <div className="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-full shadow-lg shadow-indigo-500/20">
-             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Plano Criador+</span>
+             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Plano CarlinPremium</span>
           </div>
         </div>
 
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Apoie quem te respeita.</h1>
           <p className="text-zinc-400 text-sm font-medium leading-relaxed max-w-md mx-auto">
-            O Carlin é independente de cassinos e publicidade abusiva. Ao assinar o Criador+, você sustenta a rede mais justa da internet e ganha voz no nosso laboratório.
+            O Carlin é independente de cassinos e publicidade abusiva. Ao assinar o <span className="text-white font-bold">CarlinPremium</span>, você sustenta a rede mais justa e ganha acesso ao nosso laboratório privado.
           </p>
         </div>
 
         {/* Benefits Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <BenefitCard icon="🧪" title="Laboratório Labs" text="Acesso total ao programa beta e novos APKs experimentais em primeira mão." />
-           <BenefitCard icon="📊" title="Métricas de Impacto" text="Dashboard Pro com foco em retenção, circulação contínua e valor social." />
-           <BenefitCard icon="🗳️" title="Voto em Recursos" text="Suas sugestões ganham prioridade máxima na mesa dos nossos engenheiros." />
-           <BenefitCard icon="🛡️" title="Badge de Apoiador" text="Selo Criador+ no perfil para identificar quem ajuda a manter a plataforma." />
+           <BenefitCard icon="🧪" title="Laboratório Labs" text="Acesso exclusivo ao APK beta e versões experimentais distribuídas em grupos fechados." />
+           <BenefitCard icon="📊" title="Métricas de Impacto" text="Dashboard Pro com foco em retenção e valor social real, sem métricas de vaidade." />
+           <BenefitCard icon="🗳️" title="Voto Prioritário" text="Seus feedbacks são analisados primeiro e moldam a prioridade da engenharia." />
+           <BenefitCard icon="🛡️" title="Badge Premium" text="Selo exclusivo de apoiador no perfil e status 'Active Subscriber' garantido." />
         </div>
 
         {/* Ethics Box - MANDATORY RULES */}
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8 space-y-6">
-           <h3 className="text-xs font-black uppercase text-blue-500 tracking-widest text-center">Nossa Política de Honestidade</h3>
+           <h3 className="text-xs font-black uppercase text-blue-500 tracking-widest text-center">Regras de Assinante</h3>
            <div className="space-y-4">
-              <RuleItem text="O Criador+ NÃO compra alcance. Seu conteúdo vence pelo mérito." />
-              <RuleItem text="A assinatura é o que nos permite dizer NÃO para anúncios de apostas." />
-              <RuleItem text="Cancelamento respeitoso: 2 cliques e você volta ao plano comum." />
+              <RuleItem text="O APK beta é privado e de uso pessoal exclusivo para assinantes ativos." />
+              <RuleItem text="O CarlinPremium é o que nos permite manter a rede livre de anúncios de cassino." />
+              <RuleItem text="Cancelamento respeitoso: 2 cliques e você volta ao plano comum no próximo ciclo." />
            </div>
         </div>
 
@@ -75,25 +77,19 @@ const CreatorPlus: React.FC<CreatorPlusProps> = ({ user, onSubscribe, onBack, on
 
            <button 
              onClick={onSubscribe}
-             disabled={user.isPremium}
-             className={`w-full ${user.isPremium ? 'bg-zinc-800 text-zinc-500 cursor-default' : 'bg-white text-black active:scale-95'} py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl transition-all shadow-blue-600/10`}
+             disabled={isPremium}
+             className={`w-full ${isPremium ? 'bg-zinc-800 text-zinc-500 cursor-default' : 'bg-white text-black active:scale-95'} py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl transition-all shadow-blue-600/10`}
            >
-             {user.isPremium ? 'Sua Assinatura está Ativa 💎' : 'Assinar Criador+ Agora'}
+             {isPremium ? 'Sua Assinatura está Ativa 💎' : 'Assinar CarlinPremium Agora'}
            </button>
            
-           {user.isPremium && (
+           {isPremium && (
              <button 
               onClick={onOpenCancel}
               className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest hover:text-red-500 transition-colors underline"
              >
                Gerenciar ou Cancelar Assinatura
              </button>
-           )}
-           
-           {!user.isPremium && (
-             <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest leading-relaxed">
-               Cobrança recorrente. Use o app com liberdade.<br/>Cancelamento instantâneo.
-             </p>
            )}
         </div>
       </div>

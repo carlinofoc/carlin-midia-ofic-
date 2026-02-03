@@ -2,6 +2,7 @@
 export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register' | 'login' | 'dashboard' | 'verification' | 'biometric_policy' | 'ad_controls' | 'monetization_manifesto' | 'beta_center' | 'creator_plus' | 'beta_terms' | 'roadmap' | 'creator_plus_faq' | 'monetization_info' | 'cancel_subscription' | 'notification_settings' | 'developer_info' | 'developer_manifesto' | 'advanced_settings' | 'security_center';
 export type FeedMode = 'followers' | 'discovery' | 'relevance';
 export type FeedFormatPreference = 'posts' | 'videos' | 'balanced';
+export type SubscriptionStatus = 'active' | 'canceled' | 'none';
 
 export interface EncryptedPayload {
   encrypted: string;
@@ -35,7 +36,9 @@ export interface User {
   isVerified?: boolean;
   isFaciallyVerified?: boolean;
   isPremium?: boolean;
+  subscriptionStatus?: SubscriptionStatus;
   isBetaTester?: boolean;
+  betaGroup?: string;
   email?: string;
   sessionToken?: string;
   notificationPrefs?: NotificationPrefs;

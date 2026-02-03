@@ -96,7 +96,7 @@ const Registration: React.FC<RegistrationProps> = ({ onComplete, onNavigateToLog
                 </button>
               </form>
 
-              <button onClick={onNavigateToLogin} className="w-full text-[10px] text-zinc-600 font-bold uppercase hover:text-white transition-colors">
+              <button onClick={onNavigateToLogin} className="w-full text-[10px] text-zinc-600 font-bold uppercase hover:text-blue-500">
                 Já possui identidade vinculada? Entrar
               </button>
             </div>

@@ -22,6 +22,8 @@ import DeveloperManifesto from './components/DeveloperManifesto';
 import AdvancedSettings from './components/AdvancedSettings';
 import SecurityCenter from './components/SecurityCenter';
 import CombinedBanner from './components/CombinedBanner';
+import CreatorPlusFAQ from './components/CreatorPlusFAQ';
+import CancelSubscription from './components/CancelSubscription';
 import { rankFeed } from './services/algorithmService';
 import { dbService } from './services/dbService';
 
@@ -150,6 +152,32 @@ const App: React.FC = () => {
     setCurrentView('login');
   };
 
+  const handleSubscribe = () => {
+    if (currentUser) {
+      const updatedUser = { 
+        ...currentUser, 
+        isPremium: true, 
+        subscriptionStatus: 'active' as const,
+        betaGroup: 'Alpha-Testers'
+      };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
+      setCurrentView('beta_center');
+    }
+  };
+
+  const handleCancelSub = () => {
+    if (currentUser) {
+      const updatedUser = { 
+        ...currentUser, 
+        subscriptionStatus: 'canceled' as const 
+      };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
+      setCurrentView('profile');
+    }
+  };
+
   const renderView = () => {
     if (!hasAcceptedTerms) return <TermsOfUse onAccept={() => { setHasAcceptedTerms(true); localStorage.setItem('carlin_terms_accepted', 'true'); }} showAcceptButton={true} />;
     
@@ -184,6 +212,10 @@ const App: React.FC = () => {
           onOpenAdvancedSettings={() => setCurrentView('advanced_settings')}
         />
       );
+      case 'beta_center': return <BetaCenter user={currentUser!} onUpdateUser={(u) => setCurrentUser(u)} onBack={() => setCurrentView('profile')} onOpenTerms={() => setCurrentView('beta_terms')} />;
+      case 'creator_plus': return <CreatorPlus user={currentUser!} onSubscribe={handleSubscribe} onBack={() => setCurrentView('profile')} onOpenFAQ={() => setCurrentView('creator_plus_faq')} onOpenCancel={() => setCurrentView('cancel_subscription')} />;
+      case 'creator_plus_faq': return <CreatorPlusFAQ onBack={() => setCurrentView('creator_plus')} />;
+      case 'cancel_subscription': return <CancelSubscription onConfirm={handleCancelSub} onBack={() => setCurrentView('creator_plus')} />;
       case 'advanced_settings': return (
         <AdvancedSettings 
           user={currentUser!} onBack={() => setCurrentView('profile')} 
