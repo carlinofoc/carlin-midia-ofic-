@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig } from './types';
+import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig } from './types';
 import { Icons } from './constants';
 import Feed from './components/Feed';
 import Profile from './components/Profile';
@@ -28,6 +28,7 @@ import Explore from './components/Explore';
 import Reels from './components/Reels';
 import { rankFeed } from './services/algorithmService';
 import { dbService } from './services/dbService';
+import { liteModeManager, networkLimiter } from './services/liteModeService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
@@ -43,7 +44,9 @@ const App: React.FC = () => {
     return localStorage.getItem('carlin_insta_banner_closed') !== 'true';
   });
 
-  const [liteMode, setLiteMode] = useState<boolean>(() => localStorage.getItem('carlin_lite_mode') === 'true');
+  const [liteMode, setLiteMode] = useState<boolean>(() => liteModeManager.isLiteEnabled());
+  const [liteConfig, setLiteConfig] = useState<LiteConfig>(() => liteModeManager.getConfig());
+
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('carlin_dark_mode');
     return saved === null ? true : saved === 'true';
@@ -56,7 +59,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Carlin Boot Flow v5.2
+  // Carlin Boot Flow v5.3
   useEffect(() => {
     const identity = dbService.verificarIdentidadeLocal();
     const sessionActive = sessionStorage.getItem('carlin_session') === 'true';
@@ -85,15 +88,30 @@ const App: React.FC = () => {
   });
   
   useEffect(() => {
-    localStorage.setItem('carlin_lite_mode', liteMode.toString());
+    // Sync Manager
+    liteModeManager.setEnabled(liteMode);
+    liteModeManager.setConfig(liteConfig);
+    
     localStorage.setItem('carlin_dark_mode', darkMode.toString());
     localStorage.setItem('carlin_ad_config', JSON.stringify(adConfig));
     
     if (!isAuthenticated || !currentUser) return;
 
-    const loadLimit = liteMode ? 15 : 40;
+    // Load items based on constraints
+    const loadLimit = liteMode ? (liteConfig.maxDataUsageMB > 10 ? 15 : 8) : 40;
     const categories = ["Marketing Digital", "Estratégia", "Growth", "Design", "Monetização", "Storytelling", "AI"];
     
+    // Simulate Network Registration for Lite Mode
+    if (liteMode) {
+      const simulatedRequestSize = loadLimit * 0.15; // 0.15MB per post metadata
+      // Fix: canLoad expects 3 arguments: sizeMB, limit, isLite
+      if (networkLimiter.canLoad(simulatedRequestSize, liteConfig.maxDataUsageMB, liteMode)) {
+        networkLimiter.registerUsage(simulatedRequestSize);
+      } else {
+        console.warn("[Carlin Lite] Network Quota Exceeded. Loading partial feed.");
+      }
+    }
+
     const generatedPosts: Post[] = Array.from({ length: loadLimit }).map((_, i) => {
       const category = categories[i % categories.length];
       const createdDate = new Date();
@@ -121,7 +139,7 @@ const App: React.FC = () => {
     const rankedItems = rankFeed(generatedPosts, currentUser);
     setFeedItems(rankedItems);
 
-    const initialStories: Story[] = Array.from({ length: 12 }).map((_, i) => ({
+    const initialStories: Story[] = Array.from({ length: liteMode ? 6 : 12 }).map((_, i) => ({
       id: `story-${i}`,
       userId: `s-${i}`,
       username: `user_${i}`,
@@ -130,7 +148,7 @@ const App: React.FC = () => {
       viewed: i > 8
     }));
     setStories(initialStories);
-  }, [liteMode, darkMode, adConfig, isAuthenticated, currentUser]);
+  }, [liteMode, liteConfig, darkMode, adConfig, isAuthenticated, currentUser]);
 
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
@@ -198,13 +216,21 @@ const App: React.FC = () => {
               <button onClick={() => setFeedMode('discovery')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest ${feedMode === 'discovery' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-zinc-500'}`}>Descoberta</button>
             </div>
             <Stories stories={stories} />
-            <Feed posts={feedItems} currentUser={currentUser!} showInstaBanner={showInstaBanner} onCloseBanner={() => setShowInstaBanner(false)} onOpenInfo={() => setShowReachInfo(true)} onOpenCreate={() => setCurrentView('create')} />
+            <Feed 
+              posts={feedItems} 
+              currentUser={currentUser!} 
+              showInstaBanner={showInstaBanner} 
+              onCloseBanner={() => setShowInstaBanner(false)} 
+              onOpenInfo={() => setShowReachInfo(true)} 
+              onOpenCreate={() => setCurrentView('create')} 
+              liteConfig={liteConfig}
+            />
           </div>
         );
       case 'explore':
         return <Explore posts={feedItems as Post[]} />;
       case 'reels':
-        return <Reels />;
+        return <Reels liteConfig={liteConfig} />;
       case 'profile': return (
         <Profile 
           user={currentUser!} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} 
@@ -227,13 +253,14 @@ const App: React.FC = () => {
           user={currentUser!} onBack={() => setCurrentView('profile')} 
           isDark={darkMode} onToggleDark={() => setDarkMode(!darkMode)}
           isLite={liteMode} onToggleLite={() => setLiteMode(!liteMode)}
+          liteConfig={liteConfig} onUpdateLiteConfig={setLiteConfig}
           onOpenSecurityCenter={() => setCurrentView('security_center')}
         />
       );
       case 'security_center': return <SecurityCenter user={currentUser!} onBack={() => setCurrentView('advanced_settings')} onUpdateUser={(u) => setCurrentUser(u)} />;
       case 'dashboard': return <Dashboard user={currentUser!} posts={[]} onBack={() => setCurrentView('profile')} onOpenRoadmap={() => setCurrentView('roadmap')} />;
       case 'create': return <CreatePost onPostCreated={(p) => { setFeedItems([p, ...feedItems]); setCurrentView('feed'); }} onCancel={() => setCurrentView('feed')} />;
-      default: return <Feed posts={feedItems} currentUser={currentUser!} />;
+      default: return <Feed posts={feedItems} currentUser={currentUser!} liteConfig={liteConfig} />;
     }
   };
 

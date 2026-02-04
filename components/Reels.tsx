@@ -1,6 +1,12 @@
 
 import React, { useState } from 'react';
 import { Icons } from '../constants';
+import { LiteConfig } from '../types';
+import { liteModeManager } from '../services/liteModeService';
+
+interface ReelsProps {
+  liteConfig: LiteConfig;
+}
 
 const REELS_DATA = [
   { id: 1, video: 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-dancing-2322-large.mp4', user: '@neon_pulse', likes: '2.4M', comments: '12K', caption: 'Living in the future 🌌 #Cyberpunk #Vibes' },
@@ -8,26 +14,31 @@ const REELS_DATA = [
   { id: 3, video: 'https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-ocean-near-a-cliff-4293-large.mp4', user: '@wanderlust', likes: '1.2M', comments: '8K', caption: 'Peace found here. 🌊 #Ocean #Travel' },
 ];
 
-const Reels: React.FC = () => {
+const Reels: React.FC<ReelsProps> = ({ liteConfig }) => {
   return (
     <div className="h-screen w-full lg:max-w-[400px] lg:mx-auto bg-black overflow-y-scroll snap-y snap-mandatory hide-scrollbar">
       {REELS_DATA.map((reel) => (
-        <ReelItem key={reel.id} reel={reel} />
+        <ReelItem key={reel.id} reel={reel} liteConfig={liteConfig} />
       ))}
     </div>
   );
 };
 
-// Use React.FC to handle standard React props like key correctly
-const ReelItem: React.FC<{ reel: any }> = ({ reel }) => {
-  const [isPlaying, setIsPlaying] = useState(true);
+const ReelItem: React.FC<{ reel: any; liteConfig: LiteConfig }> = ({ reel, liteConfig }) => {
+  // Carlin Engine logic for Reels
+  // if (LiteModeManager.isLiteEnabled()) { setAutoPlay(false) } 
+  // else { setAutoPlay(true) }
+  const isLite = liteModeManager.isLiteEnabled();
+  const autoPlayEnabled = !isLite || !liteConfig.disableAutoPlayVideos;
+  
+  const [isPlaying, setIsPlaying] = useState(autoPlayEnabled);
 
   return (
     <div className="relative h-screen w-full snap-start flex items-center justify-center group">
       <video 
         src={reel.video} 
         className="h-full w-full object-cover" 
-        autoPlay 
+        autoPlay={autoPlayEnabled}
         loop 
         muted 
         playsInline
@@ -71,9 +82,12 @@ const ReelItem: React.FC<{ reel: any }> = ({ reel }) => {
         </div>
       </div>
 
-      {!isPlaying && (
+      {(!isPlaying || (!autoPlayEnabled && !isPlaying)) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
           <Icons.Play className="w-20 h-20 opacity-50" />
+          {isLite && liteConfig.disableAutoPlayVideos && (
+             <span className="absolute bottom-32 text-[8px] font-black uppercase text-white/40 tracking-widest">Autoplay Inativo (Lite Mode)</span>
+          )}
         </div>
       )}
     </div>

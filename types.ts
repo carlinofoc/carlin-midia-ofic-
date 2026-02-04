@@ -6,6 +6,15 @@ export type SubscriptionStatus = 'active' | 'canceled' | 'none';
 export type LinkType = 'normal' | 'pinned' | 'monetized' | 'exclusive';
 export type LinkStatus = 'active' | 'inactive';
 
+export interface LiteConfig {
+  maxDataUsageMB: number; // 5, 10, 15
+  maxRamUsageGB: number;  // 1 a 4
+  cpuLimitPercent: number; // 20% a 80%
+  reduceImageQuality: boolean;
+  disableAutoPlayVideos: boolean;
+  aggressiveCache: boolean;
+}
+
 export interface EncryptedPayload {
   encrypted: string;
   iv: string;

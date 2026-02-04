@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { liteModeManager } from '../services/liteModeService';
 
 interface DownloadPageProps {
   onInstall: () => void;
@@ -10,22 +11,25 @@ const DownloadPage: React.FC<DownloadPageProps> = ({ onInstall }) => {
   const [isCompiling, setIsCompiling] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // Link real para download do APK (Exemplo: Link do GitHub Release ou Google Drive)
-  // Em produção, este link deve apontar para o binário real gerado pelo build.
   const apkDownloadLink = "https://github.com/carlin-oficial/carlin-midia-ofic/releases/download/v3.5.2/app-release.apk";
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(apkDownloadLink)}`;
 
   const startDownload = () => {
     setIsCompiling(true);
     let p = 0;
+    
+    // Applying throttled frame delay logic:
+    // if (lite) 32ms else 16ms
+    // We scale this to a base of 40ms vs 80ms for visible progress UI
+    const frameDelay = liteModeManager.getFrameDelay() * 2.5; 
+
     const interval = setInterval(() => {
-      p += Math.floor(Math.random() * 10) + 2;
+      p += Math.floor(Math.random() * 5) + 1;
       if (p >= 100) {
         p = 100;
         clearInterval(interval);
         setTimeout(() => {
           setIsCompiling(false);
-          // Inicia o download real
           const a = document.createElement('a');
           a.href = apkDownloadLink;
           a.download = 'CarlinMidiaOfic_v3.5.2.apk';
@@ -36,7 +40,7 @@ const DownloadPage: React.FC<DownloadPageProps> = ({ onInstall }) => {
         }, 500);
       }
       setProgress(p);
-    }, 100);
+    }, frameDelay);
   };
 
   return (
@@ -149,6 +153,7 @@ const DownloadPage: React.FC<DownloadPageProps> = ({ onInstall }) => {
               </svg>
               <div className="absolute inset-0 flex items-center justify-center flex-col">
                  <span className="text-4xl font-black italic tracking-tighter">{progress}%</span>
+                 {liteModeManager.isLiteEnabled() && <span className="text-[8px] font-black uppercase text-blue-400 mt-2">Mode: Low FPS</span>}
               </div>
            </div>
            <div className="text-center space-y-3">

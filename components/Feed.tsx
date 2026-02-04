@@ -1,8 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Post, User, FeedItem, Ad } from '../types';
+import { Post, User, FeedItem, Ad, LiteConfig } from '../types';
 import { Icons } from '../constants';
 import AdItem from './AdItem';
+import { liteModeManager } from '../services/liteModeService';
 
 interface FeedProps {
   posts: FeedItem[];
@@ -11,9 +12,10 @@ interface FeedProps {
   onCloseBanner?: () => void;
   onOpenInfo?: () => void;
   onOpenCreate?: () => void;
+  liteConfig: LiteConfig;
 }
 
-const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onCloseBanner, onOpenInfo, onOpenCreate }) => {
+const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onCloseBanner, onOpenInfo, onOpenCreate, liteConfig }) => {
   return (
     <div className="flex flex-col w-full">
       {showInstaBanner && (
@@ -70,7 +72,7 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
               return <AdItem key={item.id} ad={item as Ad} />;
             }
             const postItem = item as Post;
-            return <PostCard key={item.id} post={postItem} isOwnPost={postItem.autor_id === currentUser.id} currentUser={currentUser} />;
+            return <PostCard key={item.id} post={postItem} isOwnPost={postItem.autor_id === currentUser.id} currentUser={currentUser} liteConfig={liteConfig} />;
           })}
           
           <div className="px-6 py-20 text-center space-y-6">
@@ -97,7 +99,7 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
   );
 };
 
-const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }> = ({ post, isOwnPost, currentUser }) => {
+const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; liteConfig: LiteConfig }> = ({ post, isOwnPost, currentUser, liteConfig }) => {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
   const [showInsights, setShowInsights] = useState(false);
@@ -135,6 +137,20 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
   };
 
   useEffect(() => {
+    // Carlin Engine v5.3 Autoplay logic
+    // if (LiteModeManager.isLiteEnabled()) { videoPlayer.setAutoPlay(false) } 
+    // else { videoPlayer.setAutoPlay(true) }
+    const isLite = liteModeManager.isLiteEnabled();
+    const shouldDisableAutoplay = isLite && liteConfig.disableAutoPlayVideos;
+
+    if (shouldDisableAutoplay) {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -153,9 +169,15 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
     );
     if (videoRef.current) observer.observe(videoRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [liteConfig.disableAutoPlayVideos]);
 
   const isUserVerified = (isOwnPost && currentUser?.isFaciallyVerified) || (!isOwnPost && post.isVerified);
+  
+  // Strict Glide-like optimization logic
+  const mediaUrl = post.media[0];
+  const displayMediaUrl = post.type === 'image' 
+    ? liteModeManager.getOptimizedImageUrl(mediaUrl) 
+    : mediaUrl;
 
   return (
     <article className="bg-transparent mb-10 border-b border-zinc-900/50 pb-8 animate-in fade-in duration-500">
@@ -189,15 +211,20 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
       <div className="relative aspect-square bg-zinc-900 overflow-hidden shadow-2xl" onDoubleClick={handleDoubleClick}>
         {post.type === 'video' ? (
           <div className="relative w-full h-full cursor-pointer" onClick={toggleVideo}>
-            <video ref={videoRef} src={post.media[0]} className="w-full h-full object-cover" loop muted playsInline />
-            {!isPlaying && (
+            <video ref={videoRef} src={mediaUrl} className="w-full h-full object-cover" loop muted playsInline />
+            {(!isPlaying || (liteModeManager.isLiteEnabled() && liteConfig.disableAutoPlayVideos)) && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                 <Icons.Play className="w-12 h-12 text-white/50" />
               </div>
             )}
+            {liteModeManager.isLiteEnabled() && liteConfig.disableAutoPlayVideos && !isPlaying && (
+              <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 rounded text-[7px] font-black uppercase text-white">
+                Autoplay Off (Lite)
+              </div>
+            )}
           </div>
         ) : (
-          <img src={post.media[0]} className="w-full h-full object-cover" loading="lazy" />
+          <img src={displayMediaUrl} className="w-full h-full object-cover" loading="lazy" />
         )}
         {showHeart && (
           <div className="absolute inset-0 flex items-center justify-center animate-in zoom-in-50 duration-300 pointer-events-none">
@@ -226,7 +253,7 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User }>
           <div className="pt-4">
             <button onClick={toggleInsights} className="text-[9px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica v5.2'}
+              {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica v5.3'}
             </button>
             {showInsights && post.scores && (
               <div className="mt-3 p-6 bg-zinc-900 rounded-[2rem] border border-zinc-800 space-y-4 animate-in slide-in-from-top-2 duration-300">

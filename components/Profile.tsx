@@ -6,6 +6,7 @@ import EditProfilePhoto from './EditProfilePhoto';
 import EditBio from './EditBio';
 import EditLinks from './EditLinks';
 import { dbService } from '../services/dbService';
+import { liteModeManager } from '../services/liteModeService';
 
 interface ProfileProps {
   user: User;
@@ -98,7 +99,7 @@ const Profile: React.FC<ProfileProps> = ({
             <div className={`w-24 h-24 md:w-32 md:h-32 rounded-full p-[3px] ${isLite ? 'bg-zinc-800' : 'bg-gradient-to-tr from-blue-600 to-blue-400'}`}>
               <div className={`w-full h-full rounded-full ${isDark ? 'bg-black' : 'bg-white'} overflow-hidden border-2 ${isDark ? 'border-black' : 'border-white'} relative`}>
                 <img 
-                  src={user.avatar || 'assets/profile.png'} 
+                  src={liteModeManager.getOptimizedImageUrl(user.avatar || 'assets/profile.png')} 
                   className="w-full h-full object-cover group-hover:opacity-70 transition-opacity"
                   alt={`Avatar de ${user.displayName}`}
                 />
@@ -222,13 +223,13 @@ const Profile: React.FC<ProfileProps> = ({
         <div className="flex gap-2">
           <button 
             onClick={() => setShowEditBio(true)}
-            className={`flex-1 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors active:scale-95`}
+            className={`flex-1 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors active:scale-95`}
           >
             Editar Biografia
           </button>
           <button 
             onClick={onOpenCreatorPlus}
-            className={`flex-1 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors active:scale-95 text-blue-500`}
+            className={`flex-1 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'} border py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors active:scale-95 text-blue-500`}
           >
             {user.isPremium ? 'Gestão Premium' : 'Assinar Premium'}
           </button>
@@ -248,7 +249,7 @@ const Profile: React.FC<ProfileProps> = ({
         {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className={`aspect-square ${isDark ? 'bg-zinc-900' : 'bg-zinc-200'} overflow-hidden relative group`}>
             <img 
-              src={`https://picsum.photos/seed/p-${i}/400/400`} 
+              src={liteModeManager.getOptimizedImageUrl(`https://picsum.photos/seed/p-${i}/400/400`)} 
               className={`w-full h-full object-cover ${isDark ? 'opacity-80' : 'opacity-100'} group-hover:opacity-100 transition-opacity`} 
               loading="lazy"
             />

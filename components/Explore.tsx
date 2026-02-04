@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Icons } from '../constants';
 import { Post } from '../types';
+import { liteModeManager } from '../services/liteModeService';
 
 interface ExploreProps {
   posts: Post[];
@@ -67,13 +68,13 @@ const Explore: React.FC<ExploreProps> = ({ posts }) => {
                <div key={post.id} className="relative aspect-square bg-zinc-900 rounded-3xl overflow-hidden group border border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer">
                   {post.type === 'video' ? (
                      <div className="w-full h-full relative">
-                        <img src={post.userAvatar} className="w-full h-full object-cover opacity-40 blur-sm" />
+                        <img src={liteModeManager.getOptimizedImageUrl(post.userAvatar)} className="w-full h-full object-cover opacity-40 blur-sm" />
                         <div className="absolute inset-0 flex items-center justify-center">
                            <Icons.Play className="w-10 h-10 text-white/50" />
                         </div>
                      </div>
                   ) : (
-                     <img src={post.media[0]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+                     <img src={liteModeManager.getOptimizedImageUrl(post.media[0])} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
                   )}
                   
                   {/* Overlay Info */}
