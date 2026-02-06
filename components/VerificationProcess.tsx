@@ -1,19 +1,31 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { analyzeVerification } from '../services/geminiService';
+import { hashFacialVector } from '../services/cryptoService';
+import { dbService, SecurityStatus } from '../services/dbService';
+import { consentService } from '../services/consentService';
+import { facialVerificationManager } from '../services/facialVerificationService';
+import { antiFakeEngine } from '../services/antiFakeEngine';
+import { VerificationLevel, UserAccount } from '../types';
 
 interface VerificationProcessProps {
-  onComplete: () => void;
+  user: { id: string };
+  onComplete: (data: { hash: string, level: VerificationLevel }) => void;
   onCancel: () => void;
   onOpenPolicy: () => void;
+  externalData?: UserAccount;
 }
 
-const VerificationProcess: React.FC<VerificationProcessProps> = ({ onComplete, onCancel, onOpenPolicy }) => {
-  const [step, setStep] = useState<'intro' | 'consent' | 'selfie' | 'video' | 'analyzing' | 'success'>('intro');
+const VerificationProcess: React.FC<VerificationProcessProps> = ({ user, onComplete, onCancel, onOpenPolicy, externalData }) => {
+  const [step, setStep] = useState<'consentimento' | 'requisitos' | 'selfie' | 'envio_seguro' | 'status' | 'alerta'>('consentimento');
+  const [securityStatus, setSecurityStatus] = useState<SecurityStatus>('OK');
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState<number | null>(null);
+  const [achievedLevel, setAchievedLevel] = useState<VerificationLevel>(VerificationLevel.BRONZE);
+  const [progressMsg, setProgressMsg] = useState('');
+  const [isConsentAccepted, setIsConsentAccepted] = useState(externalData?.consentAccepted || false);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const addLog = (msg: string) => setLogs(prev => [msg, ...prev].slice(0, 5));
 
   useEffect(() => {
     return () => {
@@ -21,14 +33,31 @@ const VerificationProcess: React.FC<VerificationProcessProps> = ({ onComplete, o
     };
   }, [stream]);
 
+  const assignLevel = (selfieVerified: boolean, documentDetected: boolean): VerificationLevel => {
+    addLog("[ENGINE] Auditoria de hardware concluída.");
+    if (selfieVerified && documentDetected) return VerificationLevel.OURO;
+    if (selfieVerified) return VerificationLevel.PRATA;
+    return VerificationLevel.BRONZE;
+  };
+
+  const handleStartRequisitos = () => {
+    try {
+      consentService.validate(isConsentAccepted);
+      setStep('requisitos');
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
   const startCamera = async () => {
     try {
+      consentService.validate(isConsentAccepted);
       const media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
       setStream(media);
       if (videoRef.current) videoRef.current.srcObject = media;
       setStep('selfie');
-    } catch (err) {
-      alert("Precisamos de acesso à câmera para a verificação facial.");
+    } catch (err: any) {
+      alert("Falha ao inicializar sensores biométricos.");
     }
   };
 
@@ -39,161 +68,129 @@ const VerificationProcess: React.FC<VerificationProcessProps> = ({ onComplete, o
       canvas.height = videoRef.current.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(videoRef.current, 0, 0);
-      const data = canvas.toDataURL('image/jpeg');
-      setCapturedSelfie(data);
-      setStep('video');
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // Converte para ByteArray (Uint8Array) para simular o comportamento nativo
+      const byteString = atob(dataUrl.split(',')[1]);
+      const ia = new Uint8Array(byteString.length);
+      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+
+      handleUploadFlow(ia);
     }
   };
 
-  const startVideoRecord = () => {
-    setCountdown(3);
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev === 1) {
-          clearInterval(timer);
-          processVerification();
-          return null;
-        }
-        return prev ? prev - 1 : null;
-      });
-    }, 1000);
-  };
-
-  const processVerification = async () => {
-    setStep('analyzing');
-    if (capturedSelfie) {
-      await analyzeVerification(capturedSelfie);
-      setTimeout(() => setStep('success'), 3000);
+  const handleUploadFlow = async (imageBytes: Uint8Array) => {
+    setStep('envio_seguro');
+    setLogs([]);
+    setProgressMsg('Iniciando FacialVerificationManager...');
+    
+    // Replicates Kotlin: FacialVerificationManager.sendSelfie(image)
+    const serverResponse = await facialVerificationManager.sendSelfie(imageBytes);
+    
+    if (!serverResponse.success || !serverResponse.livenessConfirmed) {
+      setSecurityStatus('FAKE_PROFILE');
+      setStep('alerta');
+      return;
     }
+
+    addLog(`[SERVER] Sincronizado. TX: ${serverResponse.txId}`);
+    
+    const encryptedVector = await hashFacialVector(serverResponse.facialVector);
+    const duplicateCheck = await dbService.verificarDuplicata(encryptedVector);
+    
+    if (duplicateCheck.status !== 'OK') {
+      setSecurityStatus(duplicateCheck.status);
+      setStep('alerta');
+      return;
+    }
+
+    setAchievedLevel(assignLevel(serverResponse.livenessConfirmed, serverResponse.documentDetected));
+    setStep('status');
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-[1000] flex flex-col items-center justify-center p-6 lg:p-12 animate-in fade-in duration-500">
+    <div className="fixed inset-0 bg-black z-[2000] flex flex-col items-center justify-center p-6 animate-in fade-in overflow-y-auto">
       <div className="max-w-md w-full space-y-8">
-        {step === 'intro' && (
-          <div className="text-center space-y-8 animate-in slide-in-from-bottom-4">
-            <div className="w-20 h-20 bg-blue-600 rounded-[2rem] mx-auto flex items-center justify-center shadow-2xl shadow-blue-500/20">
-               <span className="text-3xl">🛡️</span>
+        
+        {step === 'consentimento' && (
+          <div className="text-center space-y-10">
+            <div className="w-24 h-24 bg-zinc-900 rounded-3xl mx-auto flex items-center justify-center border border-zinc-800">
+               <span className="text-4xl">🔐</span>
             </div>
-            <div className="space-y-4">
-              <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-tight">Verificação de Autenticidade</h1>
-              <p className="text-zinc-400 font-medium">
-                Garantimos que você é um criador real. O processo leva 1 minuto e exige reconhecimento facial em tempo real.
-              </p>
+            <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Verificação Facial</h2>
+            <div className="bg-zinc-900/50 p-8 rounded-[2.5rem] border border-zinc-800 text-left space-y-5">
+               <p className="text-xs text-zinc-400 leading-relaxed">
+                  O consentimento é obrigatório para processar sua biometria e elevar seu nível de segurança.
+               </p>
+               <label className="flex items-center gap-4 cursor-pointer">
+                  <input type="checkbox" className="w-5 h-5 rounded border-zinc-800 bg-black" checked={isConsentAccepted} onChange={(e) => setIsConsentAccepted(e.target.checked)} />
+                  <span className="text-[10px] uppercase font-black tracking-widest text-zinc-200">Aceito os termos biométricos</span>
+               </label>
             </div>
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 text-left space-y-4">
-               <div className="flex gap-4 items-center">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-black">1</div>
-                  <p className="text-xs text-zinc-300 font-bold uppercase">Selfie em Tempo Real</p>
-               </div>
-               <div className="flex gap-4 items-center">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-black">2</div>
-                  <p className="text-xs text-zinc-300 font-bold uppercase">Prova de Vida (Vídeo Curto)</p>
-               </div>
-               <div className="flex gap-4 items-center">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-black">3</div>
-                  <p className="text-xs text-zinc-300 font-bold uppercase">Análise de Relevância</p>
-               </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <button onClick={() => setStep('consent')} className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl">Iniciar Verificação</button>
-              <button onClick={onCancel} className="text-zinc-500 text-xs font-black uppercase tracking-widest hover:text-white">Cancelar</button>
-            </div>
+            <button onClick={handleStartRequisitos} disabled={!isConsentAccepted} className="w-full py-5 bg-blue-600 rounded-2xl font-black uppercase text-[10px] disabled:opacity-30">Prosseguir</button>
           </div>
         )}
 
-        {step === 'consent' && (
-          <div className="text-center space-y-8 animate-in slide-in-from-bottom-4">
-             <div className="text-5xl mb-6">📝</div>
-             <h2 className="text-2xl font-black italic uppercase tracking-tighter">Consentimento Biométrico</h2>
-             <p className="text-zinc-400 text-sm leading-relaxed">
-               Para prosseguir, você autoriza a coleta de sua selfie e vídeo curto para fins exclusivos de validação de identidade real. Seus dados serão criptografados e não serão usados comercialmente.
-             </p>
-             <button onClick={onOpenPolicy} className="text-blue-500 text-xs font-black uppercase tracking-widest hover:underline">Ler Política Completa</button>
-             <div className="flex flex-col gap-3 pt-4">
-                <button onClick={startCamera} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl">Autorizar e Continuar</button>
-                <button onClick={() => setStep('intro')} className="text-zinc-500 text-xs font-black uppercase tracking-widest hover:text-white">Voltar</button>
-             </div>
-          </div>
-        )}
-
-        {(step === 'selfie' || step === 'video') && (
-          <div className="text-center space-y-6">
-            <div className="relative aspect-[3/4] w-full bg-zinc-900 rounded-[3rem] overflow-hidden border-4 border-zinc-800 shadow-2xl">
-               <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover -scale-x-100" />
-               <div className="absolute inset-0 border-[32px] border-black/20 pointer-events-none flex items-center justify-center">
-                  <div className="w-[80%] aspect-[3/4] rounded-[6rem] border-2 border-dashed border-blue-500/50"></div>
-               </div>
-               {countdown && (
-                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <span className="text-8xl font-black italic animate-ping">{countdown}</span>
+        {step === 'requisitos' && (
+           <div className="text-center space-y-8">
+              <h2 className="text-2xl font-black italic uppercase text-white">Preparar Captura</h2>
+              <div className="grid gap-3">
+                 <div className="bg-zinc-900 p-6 rounded-3xl text-left flex gap-4">
+                    <span className="text-2xl">🥈</span>
+                    <div><p className="text-xs font-bold text-white">Nível PRATA</p><p className="text-[10px] text-zinc-500">Apenas seu rosto em local iluminado.</p></div>
                  </div>
-               )}
-            </div>
-            <div className="space-y-4">
-              <h2 className="text-xl font-black italic uppercase tracking-tighter">
-                {step === 'selfie' ? 'Enquadre seu rosto' : 'Gire a cabeça levemente'}
-              </h2>
-              <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
-                {step === 'selfie' ? 'Certifique-se de estar em um local iluminado.' : 'Estamos confirmando que você é humano.'}
+                 <div className="bg-zinc-900 border border-yellow-500/30 p-6 rounded-3xl text-left flex gap-4">
+                    <span className="text-2xl">🥇</span>
+                    <div><p className="text-xs font-bold text-yellow-500">Nível OURO</p><p className="text-[10px] text-zinc-500">Segure seu documento ao lado do rosto.</p></div>
+                 </div>
+              </div>
+              <button onClick={startCamera} className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase text-[10px]">Abrir Câmera</button>
+           </div>
+        )}
+
+        {step === 'selfie' && (
+          <div className="relative aspect-[3/4] w-full bg-black rounded-[3rem] overflow-hidden border-4 border-zinc-800 shadow-2xl">
+             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover -scale-x-100" />
+             <div className="absolute bottom-8 left-0 w-full flex justify-center">
+                <button onClick={takeSelfie} className="w-20 h-20 bg-white rounded-full border-8 border-zinc-900 active:scale-90 transition-transform"></button>
+             </div>
+          </div>
+        )}
+
+        {step === 'envio_seguro' && (
+          <div className="text-center space-y-6">
+             <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+             <p className="text-xs font-black uppercase text-zinc-500 tracking-widest">{progressMsg}</p>
+             <div className="bg-zinc-900 p-4 rounded-2xl font-mono text-[9px] text-left">
+                {logs.map((l, i) => <p key={i} className="text-blue-500">> {l}</p>)}
+             </div>
+          </div>
+        )}
+
+        {step === 'status' && (
+          <div className="text-center space-y-8 animate-in zoom-in-95">
+             <div className={`w-24 h-24 rounded-3xl mx-auto flex items-center justify-center shadow-2xl ${achievedLevel === VerificationLevel.OURO ? 'bg-yellow-500' : 'bg-zinc-400'}`}>
+                <span className="text-4xl">{achievedLevel === VerificationLevel.OURO ? '🥇' : '🥈'}</span>
+             </div>
+             <h2 className="text-3xl font-black italic uppercase text-white leading-none">Nível {achievedLevel}</h2>
+             <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Identidade Carlin Verificada</p>
+             <button onClick={() => onComplete({ hash: 'sealed_vector', level: achievedLevel })} className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase text-[10px]">Finalizar</button>
+          </div>
+        )}
+
+        {step === 'alerta' && (
+           <div className="text-center space-y-6">
+              <span className="text-6xl">🚨</span>
+              <h2 className="text-2xl font-black uppercase text-red-500">Erro de Segurança</h2>
+              <p className="text-xs text-zinc-400 leading-relaxed px-4">
+                {securityStatus === 'SIMILARITY_DETECTED' 
+                  ? antiFakeEngine.alertMessage() 
+                  : securityStatus === 'FAKE_PROFILE' 
+                  ? 'Falha na prova de vida em tempo real.' 
+                  : 'Esta biometria já pertence a uma conta verificada.'}
               </p>
-              <button 
-                onClick={step === 'selfie' ? takeSelfie : startVideoRecord} 
-                className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95"
-              >
-                {step === 'selfie' ? 'Capturar Selfie' : 'Iniciar Prova de Vida'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 'analyzing' && (
-          <div className="text-center space-y-12">
-             <div className="relative w-32 h-32 mx-auto">
-                <div className="absolute inset-0 border-4 border-blue-600/20 rounded-full"></div>
-                <div className="absolute inset-0 border-4 border-t-blue-500 rounded-full animate-spin"></div>
-                <div className="absolute inset-0 flex items-center justify-center text-4xl">🤖</div>
-             </div>
-             <div className="space-y-4">
-                <h2 className="text-2xl font-black italic uppercase tracking-tighter">Analisando Biometria</h2>
-                <div className="space-y-2">
-                   <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest animate-pulse">Comparando com dados da plataforma...</p>
-                   <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest animate-pulse delay-75">Validando prova de vida facial...</p>
-                   <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest mt-4">IA Carlin v4.1 Guardian</p>
-                </div>
-             </div>
-          </div>
-        )}
-
-        {step === 'success' && (
-          <div className="text-center space-y-10 animate-in zoom-in-95 duration-500">
-             <div className="w-24 h-24 bg-green-500 rounded-full mx-auto flex items-center justify-center shadow-2xl shadow-green-500/40">
-                <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
-                </svg>
-             </div>
-             <div className="space-y-4">
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter">Verificado com Sucesso!</h2>
-                <p className="text-zinc-400 font-medium">
-                  Este perfil foi verificado por reconhecimento facial e atividade real como criador de conteúdo. Seu selo azul já está ativo.
-                </p>
-             </div>
-             <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-800 border-2 border-blue-500">
-                   <img src={capturedSelfie || ""} className="w-full h-full object-cover" alt="Sua verificação" />
-                </div>
-                <div className="text-left">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Status do Perfil</p>
-                   <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-white">Criador Verificado</span>
-                      <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                      </svg>
-                   </div>
-                </div>
-             </div>
-             <button onClick={onComplete} className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all">Continuar</button>
-          </div>
+              <button onClick={onCancel} className="w-full bg-zinc-800 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Voltar</button>
+           </div>
         )}
       </div>
     </div>

@@ -28,7 +28,8 @@ const ReelItem: React.FC<{ reel: any; liteConfig: LiteConfig }> = ({ reel, liteC
   // Carlin Engine logic for Reels
   // if (LiteModeManager.isLiteEnabled()) { setAutoPlay(false) } 
   // else { setAutoPlay(true) }
-  const isLite = liteModeManager.isLiteEnabled();
+  // Corrected getter access: isLiteEnabled is a getter, not a method
+  const isLite = liteModeManager.isLiteEnabled;
   const autoPlayEnabled = !isLite || !liteConfig.disableAutoPlayVideos;
   
   const [isPlaying, setIsPlaying] = useState(autoPlayEnabled);

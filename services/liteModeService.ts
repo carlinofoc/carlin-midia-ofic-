@@ -1,22 +1,21 @@
 
-import { LiteConfig } from '../types';
+import { LiteConfig, LiteMode } from '../types';
 
 /**
- * Carlin Lite Engine v5.5 - Hierarchical Architecture with Auto-Control
+ * Carlin Lite Engine v5.9.9 - Ternary Mode Hierarchy & Tiered Rule Enforcement
  */
 
 const DEFAULT_LITE_CONFIG: LiteConfig = {
-  maxDataUsageMB: 10,
-  maxRamUsageGB: 2,
-  cpuLimitPercent: 40,
-  reduceImageQuality: true,
-  disableAutoPlayVideos: true,
-  aggressiveCache: true
+  maxDataUsageMB: 15,
+  maxRamUsageGB: 4,
+  cpuLimitPercent: 80,
+  reduceImageQuality: false,
+  disableAutoPlayVideos: false,
+  aggressiveCache: false
 };
 
 /**
  * 1. NetworkMonitor
- * Responsible for connectivity health and data metering.
  */
 class NetworkMonitor {
   private usedDataMB = 0;
@@ -28,8 +27,17 @@ class NetworkMonitor {
       rtt: conn?.rtt || 0,
       downlink: conn?.downlink || 0,
       effectiveType: conn?.effectiveType || 'unknown',
-      saveData: conn?.saveData || false
+      saveData: conn?.saveData || false,
+      type: conn?.type || 'unknown'
     };
+  }
+
+  public isUnmetered(): boolean {
+    const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    if (!conn) return true;
+    if (conn.saveData === true) return false;
+    if (conn.type) return ['wifi', 'ethernet', 'fiber'].includes(conn.type);
+    return conn.effectiveType === '4g' && conn.rtt < 100;
   }
 
   public isConnectionWeak(): boolean {
@@ -37,13 +45,8 @@ class NetworkMonitor {
     return q.rtt > 250 || q.effectiveType.includes('2g') || q.saveData || !navigator.onLine;
   }
 
-  public registerDrop() {
-    this.drops++;
-  }
-
-  public getRecentDrops() {
-    return this.drops;
-  }
+  public registerDrop() { this.drops++; }
+  public getRecentDrops() { return this.drops; }
 
   public canLoad(sizeMB: number, limit: number, isLite: boolean): boolean {
     if (!isLite) return true;
@@ -61,21 +64,32 @@ class NetworkMonitor {
     window.dispatchEvent(new CustomEvent('carlin-data-usage-updated', { detail: 0 }));
   }
 
-  public getUsedDataMB(): number {
-    return this.usedDataMB;
-  }
+  public getUsedDataMB(): number { return this.usedDataMB; }
 }
 
 /**
  * 2. MemoryManager
- * Responsible for heap monitoring and RAM allocation.
  */
 class MemoryManager {
+  public getTotalRamGB(): number {
+    return (navigator as any).deviceMemory || 4; 
+  }
+
+  public getAndroidVersion(): number {
+    const ua = navigator.userAgent;
+    const match = ua.match(/Android\s([0-9\.]+)/);
+    return match ? parseFloat(match[1]) : 13; 
+  }
+
+  public isLowEndDevice(): boolean {
+    const ram = this.getTotalRamGB();
+    const cores = navigator.hardwareConcurrency || 8;
+    return ram <= 4 || cores <= 4;
+  }
+
   public getHeapLimit(): number {
     const performanceMemory = (window.performance as any)?.memory;
-    return performanceMemory 
-      ? Math.floor(performanceMemory.jsHeapSizeLimit / 1024 / 1024) 
-      : 2048;
+    return performanceMemory ? Math.floor(performanceMemory.jsHeapSizeLimit / 1024 / 1024) : 2048;
   }
 
   public getUsedHeap(): number {
@@ -83,9 +97,7 @@ class MemoryManager {
     return performanceMemory ? Math.floor(performanceMemory.usedJSHeapSize / 1024 / 1024) : 0;
   }
 
-  public getFreeRAM(): number {
-    return this.getHeapLimit() - this.getUsedHeap();
-  }
+  public getFreeRAM(): number { return this.getHeapLimit() - this.getUsedHeap(); }
 
   public getAllocatedMB(configLimitGB: number): number {
     const systemMax = this.getHeapLimit();
@@ -96,46 +108,35 @@ class MemoryManager {
 
 /**
  * 3. CpuManager
- * Responsible for FPS throttling and thermal/pressure simulation.
  */
 class CpuManager {
   private lastFrameTime = performance.now();
   private cpuLoad = 0;
 
-  constructor() {
-    this.monitorCpu();
-  }
+  constructor() { this.monitorCpu(); }
 
   private monitorCpu() {
     const tick = () => {
       const now = performance.now();
       const delta = now - this.lastFrameTime;
-      // If frame takes > 20ms, we assume 100% of 60fps budget used or background pressure
       const instantLoad = Math.min(100, (delta / 16.6) * 100);
-      this.cpuLoad = this.cpuLoad * 0.9 + instantLoad * 0.1; // Smooth average
+      this.cpuLoad = this.cpuLoad * 0.9 + instantLoad * 0.1;
       this.lastFrameTime = now;
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   }
 
-  public getCpuUsage(): number {
-    return Math.round(this.cpuLoad);
-  }
-
-  public getFrameDelay(isLite: boolean): number {
-    return isLite ? 32 : 16;
-  }
-
-  public getSystemPressure(isLite: boolean, cpuLimit: number): 'normal' | 'optimized' | 'high' {
-    if (!isLite) return 'normal';
-    return cpuLimit > 60 ? 'high' : 'optimized';
+  public getCpuUsage(): number { return Math.round(this.cpuLoad); }
+  public getFrameDelay(mode: LiteMode): number { 
+    if (mode === LiteMode.LITE_AVANCADO) return 64; 
+    if (mode === LiteMode.LITE_ANTIGO) return 32;   
+    return 16;                                      
   }
 }
 
 /**
  * 4. CacheManager
- * Implements LRU logic for local data persistence.
  */
 class CacheManager {
   private cache = new Map<string, { data: any, size: number }>();
@@ -157,15 +158,20 @@ class CacheManager {
       this.currentSizeMB -= oldItem.size;
       this.cache.delete(key);
     }
-
     this.cache.set(key, { data, size: sizeMB });
     this.currentSizeMB += sizeMB;
     this.prune(maxLimitMB);
-    
-    window.dispatchEvent(new CustomEvent('carlin-memory-updated', { detail: { 
-      used: this.currentSizeMB, 
-      max: maxLimitMB 
-    }}));
+    this.broadcastUpdate(maxLimitMB);
+  }
+
+  public clear() {
+    this.cache.clear();
+    this.currentSizeMB = 0;
+    this.broadcastUpdate(0);
+  }
+
+  private broadcastUpdate(max: number) {
+    window.dispatchEvent(new CustomEvent('carlin-memory-updated', { detail: { used: this.currentSizeMB, max: max }}));
   }
 
   private prune(maxLimitMB: number) {
@@ -180,17 +186,11 @@ class CacheManager {
     }
   }
 
-  public getStatus() {
-    return {
-      used: this.currentSizeMB,
-      items: this.cache.size
-    };
-  }
+  public getStatus() { return { used: this.currentSizeMB, items: this.cache.size }; }
 }
 
 /**
  * 5. LiteAutoController
- * Decides automatic behaviors based on hardware/network triggers.
  */
 class LiteAutoController {
   private autoActive = false;
@@ -201,69 +201,49 @@ class LiteAutoController {
     memory: MemoryManager, 
     cpu: CpuManager,
     config: LiteConfig,
-    onAdjust: (newConfig: Partial<LiteConfig>, enableLite: boolean) => void
+    onAdjust: (newConfig: Partial<LiteConfig>, enableLiteMode: LiteMode) => void
   ) {
     const net = network.getQuality();
     const ramFree = memory.getFreeRAM();
     const cpuLoad = cpu.getCpuUsage();
-    const drops = network.getRecentDrops();
+    const isLowEnd = memory.isLowEndDevice();
 
-    let shouldEnableLite = false;
+    let targetMode = LiteMode.NORMAL;
     let adjustments: Partial<LiteConfig> = {};
     let currentReason = '';
 
-    // Network Logic
-    if (net.rtt > 250 || drops >= 2) {
-      shouldEnableLite = true;
-      adjustments.reduceImageQuality = true;
-      adjustments.disableAutoPlayVideos = true;
-      currentReason = 'Network Latency Critical';
+    if (isLowEnd || ramFree < 500) { 
+      targetMode = LiteMode.LITE_AVANCADO; 
+      currentReason = 'Device Hardware Critical'; 
+    } else if (net.rtt > 250 || ramFree < 1536 || cpuLoad > 75) {
+      targetMode = LiteMode.LITE_ANTIGO;
+      currentReason = 'System Resources Throttled';
     }
 
-    // RAM Logic
-    if (ramFree < 1536) { // 1.5GB
-      shouldEnableLite = true;
-      adjustments.maxRamUsageGB = 1;
-      adjustments.aggressiveCache = true;
-      currentReason = ramFree < 500 ? 'Low Memory Panic' : 'Memory Optimized';
-    }
-
-    // CPU Logic
-    if (cpuLoad > 75) {
-      shouldEnableLite = true;
-      adjustments.cpuLimitPercent = 60;
-      currentReason = 'High CPU Pressure';
-    }
-
-    // Recovery Logic
-    if (net.rtt < 100 && ramFree > 3072 && cpuLoad < 40 && !shouldEnableLite) {
-      this.autoActive = false;
-      this.reason = 'System Stable';
-      onAdjust(DEFAULT_LITE_CONFIG, false);
-      return;
-    }
-
-    if (shouldEnableLite) {
+    if (targetMode !== LiteMode.NORMAL) {
       this.autoActive = true;
       this.reason = currentReason;
-      onAdjust(adjustments, true);
+      onAdjust(adjustments, targetMode);
+    } else {
+      this.autoActive = false;
+      this.reason = 'System Stable';
     }
   }
 
-  public getStatus() {
-    return { active: this.autoActive, reason: this.reason };
-  }
+  public getStatus() { return { active: this.autoActive, reason: this.reason }; }
 }
 
 /**
  * LiteManager (Root)
- * Main Orchestrator of the Lite Engine.
+ * Replicates Kotlin: object LiteModeManager
  */
 class LiteManager {
   private config: LiteConfig;
-  private enabled: boolean;
+  private mode: LiteMode = LiteMode.NORMAL;
+  
+  public userSelectedLiteAvancado: boolean = false;
+  private autoDiagnosticHandle: any = null;
 
-  // Sub-Managers
   public network = new NetworkMonitor();
   public memory = new MemoryManager();
   public cpu = new CpuManager();
@@ -272,53 +252,178 @@ class LiteManager {
 
   constructor() {
     const savedConfig = localStorage.getItem('carlin_lite_config');
-    const savedEnabled = localStorage.getItem('carlin_lite_mode');
     this.config = savedConfig ? JSON.parse(savedConfig) : DEFAULT_LITE_CONFIG;
-    this.enabled = savedEnabled === 'true';
+    this.init();
+    this.startBackgroundLoops();
+  }
 
-    // Start Auto-Controller loop
-    setInterval(() => {
+  private startBackgroundLoops() {
+    if (this.autoDiagnosticHandle) clearInterval(this.autoDiagnosticHandle);
+    
+    // Auto-diagnosis is disabled in Ancient mode to save CPU
+    if (this.mode === LiteMode.LITE_ANTIGO) return;
+
+    const interval = this.shouldRunBackgroundTask ? 5000 : 15000;
+
+    this.autoDiagnosticHandle = setInterval(() => {
+      if (this.userSelectedLiteAvancado) return;
+
       this.auto.runAutoDiagnosis(
         this.network, 
         this.memory, 
         this.cpu, 
         this.config, 
-        (adj, enable) => {
+        (adj, newMode) => {
           this.config = { ...this.config, ...adj };
-          if (enable && !this.enabled) {
-            console.log(`[LiteManager] Auto-Enabled: ${this.auto.getStatus().reason}`);
-            this.setEnabled(true);
+          if (newMode !== this.mode) {
+            this.setMode(newMode, false);
             window.dispatchEvent(new CustomEvent('carlin-lite-auto-triggered'));
           }
         }
       );
-    }, 5000);
+    }, interval);
+  }
+
+  /**
+   * Replicates logic: disableBackground()
+   */
+  public get shouldRunBackgroundTask(): boolean {
+    return this.mode === LiteMode.NORMAL;
+  }
+
+  public detectLiteMode(): LiteMode {
+    const ramGB = this.memory.getTotalRamGB();
+    const androidVer = this.memory.getAndroidVersion();
+    if (androidVer <= 9 || ramGB <= 2) {
+      return LiteMode.LITE_ANTIGO;
+    }
+    return LiteMode.NORMAL;
+  }
+
+  public getCurrentMode(): LiteMode {
+    const autoMode = this.detectLiteMode();
+    return this.userSelectedLiteAvancado ? LiteMode.LITE_AVANCADO : autoMode;
+  }
+
+  public init() {
+    const savedMode = localStorage.getItem('carlin_lite_mode_enum') as LiteMode;
+    const savedUserSelected = localStorage.getItem('carlin_user_selected_avancado') === 'true';
+    this.userSelectedLiteAvancado = savedUserSelected;
+
+    if (savedMode && Object.values(LiteMode).includes(savedMode)) {
+      this.mode = savedMode;
+    } else {
+      this.mode = this.getCurrentMode();
+      localStorage.setItem('carlin_lite_mode_enum', this.mode);
+    }
+    
+    this.applyLiteRules(this.mode);
+  }
+
+  public get isLiteEnabled(): boolean {
+    return this.mode !== LiteMode.NORMAL;
+  }
+
+  public getLiteMode(): LiteMode {
+    return this.mode;
+  }
+
+  public setMode(value: LiteMode, isManual: boolean = true) {
+    this.mode = value;
+    
+    if (isManual) {
+      this.userSelectedLiteAvancado = value === LiteMode.LITE_AVANCADO;
+      localStorage.setItem('carlin_user_selected_avancado', this.userSelectedLiteAvancado.toString());
+    }
+
+    localStorage.setItem('carlin_lite_mode_enum', value);
+    this.applyLiteRules(value);
+    window.dispatchEvent(new CustomEvent('carlin-lite-mode-changed', { detail: value }));
+    this.startBackgroundLoops();
+  }
+
+  /**
+   * Replicates Kotlin: fun applyModeRules(mode: LiteMode)
+   */
+  public async applyLiteRules(mode: LiteMode = this.mode) {
+    let newConfig: LiteConfig = { ...this.config };
+
+    switch (mode) {
+      case LiteMode.LITE_ANTIGO:
+        // disableAnimations() handled via CSS class in App.tsx tied to mode
+        newConfig.maxDataUsageMB = 5;       // limitNetwork(5)
+        newConfig.reduceImageQuality = true; // limitImages(4) mapping
+        newConfig.disableAutoPlayVideos = true;
+        newConfig.aggressiveCache = true;
+        // disableBackground() handled via shouldRunBackgroundTask getter
+        break;
+
+      case LiteMode.LITE_AVANCADO:
+        newConfig.disableAutoPlayVideos = true; // disableAutoPlay()
+        // reduceNotifications() handled in NotificationSystem.tsx
+        newConfig.maxDataUsageMB = 10;          // limitNetwork(10)
+        newConfig.reduceImageQuality = true;    // limitImages(8) mapping
+        newConfig.aggressiveCache = true;
+        break;
+
+      case LiteMode.NORMAL:
+      default:
+        // fullExperience()
+        newConfig = { ...DEFAULT_LITE_CONFIG };
+        break;
+    }
+
+    this.setConfig(newConfig);
+    if (mode !== LiteMode.NORMAL) await this.clearCache();
+    
+    console.log(`[Carlin Engine] mode_rules_applied: ${mode}`);
+    window.dispatchEvent(new CustomEvent('carlin-lite-rules-applied'));
+  }
+
+  public getLiteImageConfig() {
+    return {
+      // mapping: Antigo = Sample 4 (High compression), Avancado = Sample 2
+      sampleSize: this.mode === LiteMode.LITE_ANTIGO ? 4 : (this.mode === LiteMode.LITE_AVANCADO ? 2 : 1),
+      preferredConfig: this.isLiteEnabled ? 'RGB_565' : 'ARGB_8888',
+      renderingHint: this.isLiteEnabled ? 'optimizeSpeed' : 'auto'
+    };
+  }
+
+  public async clearCache() {
+    this.cache.clear();
+    if ('caches' in window) {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+      } catch (e) { console.error("Cache flush failed", e); }
+    }
+    return true;
   }
 
   public getConfig(): LiteConfig { return { ...this.config }; }
-
   public setConfig(newConfig: LiteConfig) {
     this.config = { ...newConfig };
     localStorage.setItem('carlin_lite_config', JSON.stringify(this.config));
     window.dispatchEvent(new CustomEvent('carlin-lite-config-changed'));
   }
 
-  public isLiteEnabled(): boolean { return this.enabled; }
-  public setEnabled(value: boolean) {
-    this.enabled = value;
-    localStorage.setItem('carlin_lite_mode', value.toString());
-    window.dispatchEvent(new CustomEvent('carlin-lite-mode-changed', { detail: value }));
-  }
+  public getFrameDelay(): number { return this.cpu.getFrameDelay(this.mode); }
+  public isUnmetered(): boolean { return this.network.isUnmetered(); }
 
-  // Facade Methods
-  public getFrameDelay(): number { return this.cpu.getFrameDelay(this.enabled); }
-  public isConnectionWeak(): boolean { return this.network.isConnectionWeak(); }
+  public isAggressiveOptimizationRequired(): boolean {
+    return this.mode === LiteMode.LITE_AVANCADO || (this.isLiteEnabled && !this.isUnmetered());
+  }
   
   public getOptimizedImageUrl(url: string): string {
-    const forceOpt = this.auto.getStatus().active || this.enabled || this.isConnectionWeak();
-    if (!forceOpt || !this.config.reduceImageQuality) return url;
+    const isAggressive = this.isAggressiveOptimizationRequired();
+    if (!isAggressive && !this.isLiteEnabled && !this.config.reduceImageQuality) return url;
+    
+    const opts = this.getLiteImageConfig();
+    let resolution = opts.sampleSize >= 2 ? (opts.sampleSize === 4 ? 200 : 400) : 1080;
+    let quality = opts.preferredConfig === 'RGB_565' ? (isAggressive ? 30 : 50) : 85;
+
     const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}w=480&h=480&q=60`;
+    return `${url}${separator}w=${resolution}&h=${resolution}&q=${quality}`;
   }
 
   public getMemoryStatus() {
@@ -329,13 +434,12 @@ class LiteManager {
 }
 
 export const liteModeManager = new LiteManager();
-
-// Compatibility exports for existing code
 export const networkLimiter = liteModeManager.network;
 export const memoryCacheManager = {
   get: (key: string) => liteModeManager.cache.get(key),
   set: (key: string, data: any, sizeMB: number = 0.5) => 
     liteModeManager.cache.set(key, data, sizeMB, liteModeManager.getMemoryStatus().max),
   recalculateLimit: () => {},
-  getStatus: () => liteModeManager.getMemoryStatus()
+  getStatus: () => liteModeManager.getMemoryStatus(),
+  clear: () => liteModeManager.cache.clear()
 };

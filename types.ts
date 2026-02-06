@@ -1,15 +1,71 @@
 
-export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register' | 'login' | 'dashboard' | 'verification' | 'biometric_policy' | 'ad_controls' | 'monetization_manifesto' | 'beta_center' | 'creator_plus' | 'beta_terms' | 'roadmap' | 'creator_plus_faq' | 'monetization_info' | 'cancel_subscription' | 'notification_settings' | 'developer_info' | 'developer_manifesto' | 'advanced_settings' | 'security_center';
+export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register' | 'login' | 'dashboard' | 'verification' | 'biometric_policy' | 'ad_controls' | 'monetization_manifesto' | 'beta_center' | 'creator_plus' | 'beta_terms' | 'roadmap' | 'creator_plus_faq' | 'monetization_info' | 'cancel_subscription' | 'notification_settings' | 'developer_info' | 'developer_manifesto' | 'advanced_settings' | 'security_center' | 'impact_social' | 'support';
 export type FeedMode = 'followers' | 'discovery' | 'relevance';
 export type FeedFormatPreference = 'posts' | 'videos' | 'balanced';
 export type SubscriptionStatus = 'active' | 'canceled' | 'none';
 export type LinkType = 'normal' | 'pinned' | 'monetized' | 'exclusive';
 export type LinkStatus = 'active' | 'inactive';
 
+export enum VerificationLevel {
+  BRONZE = 'BRONZE',
+  PRATA = 'PRATA',
+  OURO = 'OURO'
+}
+
+/**
+ * Replicates Kotlin: data class UserAccount(val id, val name, val email, val level, val consentAccepted)
+ */
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  level: VerificationLevel;
+  consentAccepted: boolean;
+}
+
+export interface UserRegistration {
+  name: string;
+  email: string;
+  level: VerificationLevel;
+  consentAccepted: boolean;
+  password?: string;
+}
+
+/**
+ * Replicates Kotlin: data class SocialDonation(val month, val city, val amount, val basketsDistributed)
+ */
+export interface SocialDonation {
+  month: string;
+  city: string;
+  amount: number;
+  basketsDistributed: number;
+}
+
+/**
+ * Replicates Kotlin: data class ImpactResult(val reinvestment, val socialImpact, val founderIncome, val reserve)
+ */
+export interface ImpactResult {
+  reinvestment: number;
+  socialImpact: number;
+  founderIncome: number;
+  reserve: number;
+  // Metadata for UI
+  totalValueGenerated: number;
+  peopleReached: number;
+  ecoScore: number;
+  donations: SocialDonation[];
+}
+
+export enum LiteMode {
+  NORMAL = 'NORMAL',
+  LITE_ANTIGO = 'LITE_ANTIGO',
+  LITE_AVANCADO = 'LITE_AVANCADO'
+}
+
 export interface LiteConfig {
-  maxDataUsageMB: number; // 5, 10, 15
-  maxRamUsageGB: number;  // 1 a 4
-  cpuLimitPercent: number; // 20% a 80%
+  maxDataUsageMB: number;
+  maxRamUsageGB: number;
+  cpuLimitPercent: number;
   reduceImageQuality: boolean;
   disableAutoPlayVideos: boolean;
   aggressiveCache: boolean;
@@ -19,17 +75,42 @@ export interface EncryptedPayload {
   encrypted: string;
   iv: string;
   tag: string;
-  // Envelope Encryption (Carlin v4.9)
   encryptedDEK?: string;
   dekIv?: string;
   dekTag?: string;
 }
 
-export interface NotificationPrefs {
-  performance: boolean;
-  educational: boolean;
-  security: boolean;
-  community: boolean;
+export interface User {
+  id: string;
+  username: string;
+  displayName: string;
+  name: string; // Alinhado com UserAccount.kt
+  email: string;
+  nome_encrypted: EncryptedPayload;
+  email_encrypted: EncryptedPayload;
+  passwordHash: string;
+  chave: string;
+  avatar: string;
+  bio?: string;
+  followers: number;
+  following: number;
+  isVerified?: boolean;
+  isFaciallyVerified?: boolean;
+  verificationLevel: VerificationLevel;
+  level: VerificationLevel; // Alinhado com UserAccount.kt
+  consentAccepted: boolean; // Alinhado com UserAccount.kt
+  biometricHash?: string;
+  isPremium?: boolean;
+  subscriptionStatus?: SubscriptionStatus;
+  isBetaTester?: boolean;
+  sessionToken?: string;
+  interests: string[];
+  viewedContent: string[];
+  links?: ProfileLink[];
+  totalRevenue?: number;
+  notificationPrefs?: NotificationPrefs;
+  betaNotifications?: boolean;
+  betaGroup?: string;
 }
 
 export interface ProfileLink {
@@ -42,42 +123,11 @@ export interface ProfileLink {
   status: LinkStatus;
 }
 
-export interface User {
-  id: string;
-  username: string;
-  displayName: string;
-  nome_encrypted: EncryptedPayload;
-  email_encrypted: EncryptedPayload;
-  passwordHash: string;
-  chave: string;
-  avatar: string;
-  bio?: string;
-  followers: number;
-  following: number;
-  isVerified?: boolean;
-  isFaciallyVerified?: boolean;
-  isPremium?: boolean;
-  subscriptionStatus?: SubscriptionStatus;
-  isBetaTester?: boolean;
-  betaGroup?: string;
-  email?: string;
-  sessionToken?: string;
-  notificationPrefs?: NotificationPrefs;
-  betaNotifications?: boolean;
-  links?: ProfileLink[];
-  totalRevenue?: number;
-  // MongoDB Context
-  interests: string[];
-  viewedContent: string[];
-}
-
-export interface PostAlgoMetadata {
-  interesse_comum: number; // 0-1
-  engajamento_amigo: number; // 0-1
-  recencia: number; // 0-1
-  viralidade: number; // 0-1
-  interesse_usuario: number; // 0-1
-  novidade: number; // 0-1
+export interface NotificationPrefs {
+  performance: boolean;
+  educational: boolean;
+  security: boolean;
+  community: boolean;
 }
 
 export interface Post {
@@ -87,15 +137,14 @@ export interface Post {
   userAvatar: string;
   content: string;
   category: string;
-  conteudo_encrypted?: EncryptedPayload;
   media: string[];
   type: 'image' | 'video' | 'carousel';
   likes: number;
   comments: number;
   shares: number;
-  createdAt: string; // ISO Date
+  createdAt: string;
   trendingScore: number;
-  timestamp: string; // Display
+  timestamp: string;
   isVerified?: boolean;
   scores?: {
     amigos: number;
@@ -109,25 +158,6 @@ export interface Post {
       diversity: number;
     };
   };
-}
-
-export interface PostStats {
-  followerReach: number;
-  nonFollowerReach: number;
-  engagementRate: number;
-  relevanceScore: number;
-  saves: number;
-  shares: number;
-  isContinuousCirculation: boolean;
-}
-
-export interface AdCategoryConfig {
-  education: boolean;
-  tech: boolean;
-  tools: boolean;
-  investments: boolean;
-  brands: boolean;
-  casino: boolean; 
 }
 
 export interface Ad {
@@ -153,6 +183,13 @@ export interface Story {
   viewed: boolean;
 }
 
+export interface Chat {
+  id: string;
+  user: User;
+  lastMessage: string;
+  messages: Message[];
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -161,11 +198,13 @@ export interface Message {
   isAI?: boolean;
 }
 
-export interface Chat {
-  id: string;
-  user: User;
-  lastMessage: string;
-  messages: Message[];
+export interface AdCategoryConfig {
+  education: boolean;
+  tech: boolean;
+  tools: boolean;
+  investments: boolean;
+  brands: boolean;
+  casino: boolean;
 }
 
 export interface BetaComment {
@@ -181,7 +220,7 @@ export interface BetaFeature {
   title: string;
   description: string;
   votes: number;
-  status: 'voting' | 'testing' | 'development';
+  status: 'voting' | 'development' | 'testing';
   comments: BetaComment[];
 }
 

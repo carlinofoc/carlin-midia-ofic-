@@ -153,7 +153,8 @@ const DownloadPage: React.FC<DownloadPageProps> = ({ onInstall }) => {
               </svg>
               <div className="absolute inset-0 flex items-center justify-center flex-col">
                  <span className="text-4xl font-black italic tracking-tighter">{progress}%</span>
-                 {liteModeManager.isLiteEnabled() && <span className="text-[8px] font-black uppercase text-blue-400 mt-2">Mode: Low FPS</span>}
+                 {/* Corrected getter access: isLiteEnabled is a getter, not a method */}
+                 {liteModeManager.isLiteEnabled && <span className="text-[8px] font-black uppercase text-blue-400 mt-2">Mode: Low FPS</span>}
               </div>
            </div>
            <div className="text-center space-y-3">

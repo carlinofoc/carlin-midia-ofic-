@@ -26,6 +26,17 @@ export const generateMasterKey = (): string => {
 };
 
 /**
+ * Hashes a numerical vector for secure biometric storage.
+ * Flow: Vetor facial (números) -> Hash seguro
+ */
+export const hashFacialVector = async (vector: number[]): Promise<string> => {
+  const encoder = new TextEncoder();
+  const vectorStr = vector.join(','); // Flatten vector to string
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(vectorStr));
+  return bufferToHex(hashBuffer);
+};
+
+/**
  * Derives a key from a password using PBKDF2
  */
 export const deriveKeyFromPassword = async (password: string, salt: string): Promise<string> => {

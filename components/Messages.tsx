@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Message, Chat } from '../types';
+import { User, Message, Chat, VerificationLevel } from '../types';
 import { Icons } from '../constants';
 import { simulateAIResponse } from '../services/geminiService';
 
@@ -12,6 +12,8 @@ const MOCK_CHATS: Chat[] = [
       id: 'u1', 
       username: 'crypto_wiz', 
       displayName: 'Elena Crypto', 
+      name: 'Elena Crypto',
+      email: 'elena@example.com',
       avatar: 'https://picsum.photos/seed/chat1/100/100', 
       followers: 120, 
       following: 100,
@@ -19,7 +21,9 @@ const MOCK_CHATS: Chat[] = [
       email_encrypted: { encrypted: '', iv: '', tag: '' },
       passwordHash: '',
       chave: '',
-      // Fix: Add missing properties interests and viewedContent
+      verificationLevel: VerificationLevel.BRONZE,
+      level: VerificationLevel.BRONZE,
+      consentAccepted: true,
       interests: [],
       viewedContent: []
     },
@@ -35,6 +39,8 @@ const MOCK_CHATS: Chat[] = [
       id: 'u2', 
       username: 'ai_buddy', 
       displayName: 'Nexus AI (Simulation)', 
+      name: 'Nexus AI',
+      email: 'nexus@carlin.ai',
       avatar: 'https://picsum.photos/seed/ai/100/100', 
       followers: 1000, 
       following: 0, 
@@ -43,7 +49,9 @@ const MOCK_CHATS: Chat[] = [
       email_encrypted: { encrypted: '', iv: '', tag: '' },
       passwordHash: '',
       chave: '',
-      // Fix: Add missing properties interests and viewedContent
+      verificationLevel: VerificationLevel.OURO,
+      level: VerificationLevel.OURO,
+      consentAccepted: true,
       interests: [],
       viewedContent: []
     },

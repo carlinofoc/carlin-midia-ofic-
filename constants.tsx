@@ -65,3 +65,33 @@ export const Icons = {
     </svg>
   ),
 };
+
+/**
+ * Replicates Kotlin: object ImpactMessage
+ */
+export const ImpactMessage = {
+  USER_MESSAGE: `
+        Este aplicativo acredita que tecnologia também é responsabilidade social.
+        Por isso, 10% do lucro é transformado em cestas básicas para famílias que precisam.
+        Quando a plataforma cresce, a comunidade cresce junto.
+    `
+};
+
+/**
+ * Replicates strings.xml: Support strings
+ */
+export const SupportMessages = {
+  TITLE: "Apoie o desenvolvimento do aplicativo",
+  DESCRIPTION: "Este aplicativo está sendo desenvolvido de forma independente. Para mantê-lo funcionando, atualizado, seguro e acessível, criamos um apoio opcional no valor de R$ 9,90.",
+  DETAILS: [
+    "Servidores e infraestrutura",
+    "Segurança e proteção de dados",
+    "Ferramentas de desenvolvimento",
+    "Atualizações contínuas",
+    "Manutenção do modo Lite para celulares antigos",
+    "Sustentação do projeto no início"
+  ],
+  SOCIAL_IMPACT: "Além disso, parte do lucro do aplicativo é destinada à compra de cestas básicas para famílias em situação de vulnerabilidade.",
+  OPTIONAL: "O apoio é totalmente opcional. Todas as funções principais do aplicativo continuam gratuitas.",
+  BUTTON: "Apoiar por R$ 9,90"
+};

@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig } from './types';
+import React, { useState, useEffect, Suspense } from 'react';
+import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig, LiteMode, SubscriptionStatus } from './types';
 import { Icons } from './constants';
 import Feed from './components/Feed';
 import Profile from './components/Profile';
@@ -26,9 +26,20 @@ import CreatorPlusFAQ from './components/CreatorPlusFAQ';
 import CancelSubscription from './components/CancelSubscription';
 import Explore from './components/Explore';
 import Reels from './components/Reels';
+import BiometricPolicy from './components/BiometricPolicy';
+import ImpactSocialScreen from './components/ImpactSocialScreen';
+import SupportScreen from './components/SupportScreen';
 import { rankFeed } from './services/algorithmService';
 import { dbService } from './services/dbService';
 import { liteModeManager, networkLimiter } from './services/liteModeService';
+
+const LiteLayout = React.lazy(() => import('./components/LiteLayout'));
+
+declare global {
+  interface Window {
+    setWindowAnimations: (duration: number) => void;
+  }
+}
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
@@ -44,8 +55,9 @@ const App: React.FC = () => {
     return localStorage.getItem('carlin_insta_banner_closed') !== 'true';
   });
 
-  const [liteMode, setLiteMode] = useState<boolean>(() => liteModeManager.isLiteEnabled());
+  const [liteMode, setLiteMode] = useState<LiteMode>(() => liteModeManager.getLiteMode());
   const [liteConfig, setLiteConfig] = useState<LiteConfig>(() => liteModeManager.getConfig());
+  const [forcedNoAnimations, setForcedNoAnimations] = useState(false);
 
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('carlin_dark_mode');
@@ -59,7 +71,30 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Carlin Boot Flow v5.3
+  useEffect(() => {
+    window.setWindowAnimations = (duration: number) => {
+      setForcedNoAnimations(duration === 0);
+    };
+
+    const handleModeChange = (e: any) => {
+      const newMode = e.detail as LiteMode;
+      setLiteMode(newMode);
+      if (newMode !== LiteMode.NORMAL) {
+        liteModeManager.applyLiteRules();
+      }
+    };
+    
+    const handleConfigChange = () => setLiteConfig(liteModeManager.getConfig());
+
+    window.addEventListener('carlin-lite-mode-changed', handleModeChange);
+    window.addEventListener('carlin-lite-config-changed', handleConfigChange);
+
+    return () => {
+      window.removeEventListener('carlin-lite-mode-changed', handleModeChange);
+      window.removeEventListener('carlin-lite-config-changed', handleConfigChange);
+    };
+  }, []);
+
   useEffect(() => {
     const identity = dbService.verificarIdentidadeLocal();
     const sessionActive = sessionStorage.getItem('carlin_session') === 'true';
@@ -78,124 +113,68 @@ const App: React.FC = () => {
   const [adConfig, setAdConfig] = useState<AdCategoryConfig>(() => {
     const saved = localStorage.getItem('carlin_ad_config');
     return saved ? JSON.parse(saved) : {
-      education: true,
-      tech: true,
-      tools: true,
-      investments: true,
-      brands: true,
-      casino: false 
+      education: true, tech: true, tools: true, investments: true, brands: true, casino: false 
     };
   });
   
   useEffect(() => {
-    // Sync Manager
-    liteModeManager.setEnabled(liteMode);
-    liteModeManager.setConfig(liteConfig);
+    if (liteMode !== liteModeManager.getLiteMode()) {
+      liteModeManager.setMode(liteMode);
+    }
     
     localStorage.setItem('carlin_dark_mode', darkMode.toString());
     localStorage.setItem('carlin_ad_config', JSON.stringify(adConfig));
     
     if (!isAuthenticated || !currentUser) return;
 
-    // Load items based on constraints
-    const loadLimit = liteMode ? (liteConfig.maxDataUsageMB > 10 ? 15 : 8) : 40;
+    const isLiteActive = liteMode !== LiteMode.NORMAL;
+    const loadLimit = isLiteActive ? 10 : 40;
     const categories = ["Marketing Digital", "Estratégia", "Growth", "Design", "Monetização", "Storytelling", "AI"];
     
-    // Simulate Network Registration for Lite Mode
-    if (liteMode) {
-      const simulatedRequestSize = loadLimit * 0.15; // 0.15MB per post metadata
-      // Fix: canLoad expects 3 arguments: sizeMB, limit, isLite
-      if (networkLimiter.canLoad(simulatedRequestSize, liteConfig.maxDataUsageMB, liteMode)) {
-        networkLimiter.registerUsage(simulatedRequestSize);
-      } else {
-        console.warn("[Carlin Lite] Network Quota Exceeded. Loading partial feed.");
-      }
-    }
+    const generatedPosts: Post[] = Array.from({ length: loadLimit }).map((_, i) => ({
+      id: `post-${i}`,
+      autor_id: `u-${i}`,
+      username: `expert_${i}`,
+      userAvatar: `https://picsum.photos/seed/post-${i}/150/150`,
+      content: `Insights estratégicos sobre ${categories[i % categories.length]}. Conteúdo otimizado para o seu perfil.`,
+      category: categories[i % categories.length],
+      media: [i % 4 === 0 ? 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-dancing-2322-large.mp4' : `https://picsum.photos/seed/media-${i}/1080/1080`],
+      type: i % 4 === 0 ? 'video' : 'image',
+      likes: Math.floor(Math.random() * 500),
+      comments: Math.floor(Math.random() * 50),
+      shares: Math.floor(Math.random() * 20),
+      createdAt: new Date(Date.now() - i * 3600000).toISOString(),
+      trendingScore: Math.floor(Math.random() * 100),
+      timestamp: `${i + 1}h atrás`,
+      isVerified: i % 5 === 0
+    } as Post));
 
-    const generatedPosts: Post[] = Array.from({ length: loadLimit }).map((_, i) => {
-      const category = categories[i % categories.length];
-      const createdDate = new Date();
-      createdDate.setHours(createdDate.getHours() - (i * 2));
+    setFeedItems(rankFeed(generatedPosts, currentUser));
 
-      return {
-        id: `post-${i}`,
-        autor_id: `u-${i}`,
-        username: `expert_${i}`,
-        userAvatar: `https://picsum.photos/seed/post-${i}/150/150`,
-        content: `Conteúdo estratégico sobre ${category}. Insights de valor real para criadores.`,
-        category,
-        media: [i % 4 === 0 ? 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-dancing-2322-large.mp4' : `https://picsum.photos/seed/media-${i}/1080/1080`],
-        type: i % 4 === 0 ? 'video' : 'image',
-        likes: Math.floor(Math.random() * 500),
-        comments: Math.floor(Math.random() * 50),
-        shares: Math.floor(Math.random() * 20),
-        createdAt: createdDate.toISOString(),
-        trendingScore: Math.floor(Math.random() * 100),
-        timestamp: `${i + 1}h atrás`,
-        isVerified: i % 5 === 0
-      } as Post;
-    });
-
-    const rankedItems = rankFeed(generatedPosts, currentUser);
-    setFeedItems(rankedItems);
-
-    const initialStories: Story[] = Array.from({ length: liteMode ? 6 : 12 }).map((_, i) => ({
+    setStories(Array.from({ length: isLiteActive ? 6 : 12 }).map((_, i) => ({
       id: `story-${i}`,
       userId: `s-${i}`,
       username: `user_${i}`,
       userAvatar: `https://picsum.photos/seed/story-${i}/100/100`,
       media: `https://picsum.photos/seed/sm-${i}/1080/1920`,
       viewed: i > 8
-    }));
-    setStories(initialStories);
+    })));
   }, [liteMode, liteConfig, darkMode, adConfig, isAuthenticated, currentUser]);
 
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
-    setLiteMode(startLite);
+    setLiteMode(startLite ? LiteMode.LITE_ANTIGO : LiteMode.NORMAL);
     setCurrentUser(user);
     setIsAuthenticated(true);
     setCurrentView('feed');
-  };
-
-  const handleLoginComplete = (user: User) => {
-    sessionStorage.setItem('carlin_session', 'true');
-    setCurrentUser(user);
-    setIsAuthenticated(true);
-    setCurrentView('feed');
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('carlin_session');
-    setCurrentUser(null);
-    setIsAuthenticated(false);
-    setCurrentView('login');
   };
 
   const handleSubscribe = () => {
-    if (currentUser) {
-      const updatedUser = { 
-        ...currentUser, 
-        isPremium: true, 
-        subscriptionStatus: 'active' as const,
-        betaGroup: 'Alpha-Testers'
-      };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
-      setCurrentView('beta_center');
-    }
-  };
-
-  const handleCancelSub = () => {
-    if (currentUser) {
-      const updatedUser = { 
-        ...currentUser, 
-        subscriptionStatus: 'canceled' as const 
-      };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
-      setCurrentView('profile');
-    }
+    const updated = { ...currentUser!, isPremium: true, subscriptionStatus: 'active' as SubscriptionStatus };
+    dbService.registrarNoBackend(updated);
+    localStorage.setItem('carlin_id_local', JSON.stringify(updated));
+    setCurrentUser(updated);
+    setCurrentView('profile');
   };
 
   const renderView = () => {
@@ -203,8 +182,10 @@ const App: React.FC = () => {
     
     if (!isAuthenticated) {
         if (currentView === 'register') return <Registration onComplete={handleRegistrationComplete} onNavigateToLogin={() => setCurrentView('login')} />;
-        return <Login onLogin={handleLoginComplete} onNavigateToRegister={() => setCurrentView('register')} />;
+        return <Login onLogin={(u) => { setCurrentUser(u); setIsAuthenticated(true); setCurrentView('feed'); sessionStorage.setItem('carlin_session', 'true'); }} onNavigateToRegister={() => setCurrentView('register')} />;
     }
+
+    const isLiteActive = liteMode !== LiteMode.NORMAL;
 
     switch (currentView) {
       case 'feed':
@@ -215,6 +196,13 @@ const App: React.FC = () => {
               <button onClick={() => setFeedMode('relevance')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest ${feedMode === 'relevance' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-zinc-500'}`}>Entrega Total</button>
               <button onClick={() => setFeedMode('discovery')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest ${feedMode === 'discovery' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-zinc-500'}`}>Descoberta</button>
             </div>
+            
+            {isLiteActive && (
+              <Suspense fallback={null}>
+                <LiteLayout />
+              </Suspense>
+            )}
+
             <Stories stories={stories} />
             <Feed 
               posts={feedItems} 
@@ -227,14 +215,12 @@ const App: React.FC = () => {
             />
           </div>
         );
-      case 'explore':
-        return <Explore posts={feedItems as Post[]} />;
-      case 'reels':
-        return <Reels liteConfig={liteConfig} />;
+      case 'explore': return <Explore posts={feedItems as Post[]} />;
+      case 'reels': return <Reels liteConfig={liteConfig} />;
       case 'profile': return (
         <Profile 
           user={currentUser!} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} 
-          isLite={liteMode} onToggleLite={() => setLiteMode(!liteMode)} isDark={darkMode} onToggleDark={() => setDarkMode(!darkMode)}
+          isLite={isLiteActive} onToggleLite={() => setLiteMode(isLiteActive ? LiteMode.NORMAL : LiteMode.LITE_ANTIGO)} isDark={darkMode} onToggleDark={() => setDarkMode(!darkMode)}
           onOpenDashboard={() => setCurrentView('dashboard')} onOpenVerification={() => setCurrentView('verification')} onUpdateUser={(u) => setCurrentUser(u)}
           onOpenAdControls={() => setCurrentView('ad_controls')} onOpenManifesto={() => setCurrentView('monetization_manifesto')} onOpenBetaCenter={() => setCurrentView('beta_center')}
           onOpenCreatorPlus={() => setCurrentView('creator_plus')} onOpenRoadmap={() => setCurrentView('roadmap')} onOpenMonetizationInfo={() => setCurrentView('monetization_info')}
@@ -242,17 +228,17 @@ const App: React.FC = () => {
           onOpenDeveloperInfo={() => setCurrentView('developer_info')}
           onOpenDeveloperManifesto={() => setCurrentView('developer_manifesto')}
           onOpenAdvancedSettings={() => setCurrentView('advanced_settings')}
+          onOpenImpactSocial={() => setCurrentView('impact_social')}
+          onOpenSupport={() => setCurrentView('support')}
         />
       );
-      case 'beta_center': return <BetaCenter user={currentUser!} onUpdateUser={(u) => setCurrentUser(u)} onBack={() => setCurrentView('profile')} onOpenTerms={() => setCurrentView('beta_terms')} />;
-      case 'creator_plus': return <CreatorPlus user={currentUser!} onSubscribe={handleSubscribe} onBack={() => setCurrentView('profile')} onOpenFAQ={() => setCurrentView('creator_plus_faq')} onOpenCancel={() => setCurrentView('cancel_subscription')} />;
-      case 'creator_plus_faq': return <CreatorPlusFAQ onBack={() => setCurrentView('creator_plus')} />;
-      case 'cancel_subscription': return <CancelSubscription onConfirm={handleCancelSub} onBack={() => setCurrentView('creator_plus')} />;
+      case 'support': return <SupportScreen onSupport={handleSubscribe} onBack={() => setCurrentView('profile')} />;
+      case 'impact_social': return <ImpactSocialScreen user={currentUser!} onBack={() => setCurrentView('profile')} />;
       case 'advanced_settings': return (
         <AdvancedSettings 
           user={currentUser!} onBack={() => setCurrentView('profile')} 
           isDark={darkMode} onToggleDark={() => setDarkMode(!darkMode)}
-          isLite={liteMode} onToggleLite={() => setLiteMode(!liteMode)}
+          currentMode={liteMode} onSetMode={setLiteMode}
           liteConfig={liteConfig} onUpdateLiteConfig={setLiteConfig}
           onOpenSecurityCenter={() => setCurrentView('security_center')}
         />
@@ -260,12 +246,57 @@ const App: React.FC = () => {
       case 'security_center': return <SecurityCenter user={currentUser!} onBack={() => setCurrentView('advanced_settings')} onUpdateUser={(u) => setCurrentUser(u)} />;
       case 'dashboard': return <Dashboard user={currentUser!} posts={[]} onBack={() => setCurrentView('profile')} onOpenRoadmap={() => setCurrentView('roadmap')} />;
       case 'create': return <CreatePost onPostCreated={(p) => { setFeedItems([p, ...feedItems]); setCurrentView('feed'); }} onCancel={() => setCurrentView('feed')} />;
+      case 'verification': return (
+        <VerificationProcess 
+          user={currentUser!} 
+          onComplete={() => {
+            const updated = dbService.verificarIdentidadeLocal();
+            if (updated) setCurrentUser(updated);
+            setCurrentView('profile');
+          }} 
+          onCancel={() => setCurrentView('profile')} 
+          onOpenPolicy={() => setCurrentView('biometric_policy')}
+        />
+      );
+      case 'biometric_policy': return <BiometricPolicy onClose={() => setCurrentView('verification')} />;
+      case 'ad_controls': return <AdControlPanel config={adConfig} onUpdate={setAdConfig} onBack={() => setCurrentView('profile')} />;
+      case 'monetization_manifesto': return <MonetizationManifesto onBack={() => setCurrentView('profile')} />;
+      case 'beta_center': return <BetaCenter user={currentUser!} onUpdateUser={(u) => setCurrentUser(u)} onBack={() => setCurrentView('profile')} onOpenTerms={() => setCurrentView('beta_terms')} />;
+      case 'creator_plus': return <CreatorPlus user={currentUser!} onSubscribe={handleSubscribe} onBack={() => setCurrentView('profile')} onOpenFAQ={() => setCurrentView('creator_plus_faq')} onOpenCancel={() => setCurrentView('cancel_subscription')} />;
+      case 'roadmap': return <Roadmap onBack={() => setCurrentView('profile')} />;
+      case 'notification_settings': return <NotificationSettings user={currentUser!} onUpdate={(p) => {
+        const updated = { ...currentUser!, notificationPrefs: p };
+        localStorage.setItem('carlin_id_local', JSON.stringify(updated));
+        setCurrentUser(updated);
+      }} onBack={() => setCurrentView('profile')} />;
+      case 'developer_info': return <DeveloperInfo onBack={() => setCurrentView('profile')} onOpenRoadmap={() => setCurrentView('roadmap')} />;
+      case 'developer_manifesto': return <DeveloperManifesto onBack={() => setCurrentView('profile')} />;
+      case 'creator_plus_faq': return <CreatorPlusFAQ onBack={() => setCurrentView('creator_plus')} />;
+      case 'cancel_subscription': return <CancelSubscription onConfirm={() => {
+        const updated = { ...currentUser!, isPremium: false, subscriptionStatus: 'canceled' as SubscriptionStatus };
+        localStorage.setItem('carlin_id_local', JSON.stringify(updated));
+        setCurrentUser(updated);
+        setCurrentView('creator_plus');
+      }} onBack={() => setCurrentView('creator_plus')} />;
       default: return <Feed posts={feedItems} currentUser={currentUser!} liteConfig={liteConfig} />;
     }
   };
 
+  const isNoAnimationsActive = (liteMode !== LiteMode.NORMAL) || forcedNoAnimations;
+
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-black text-white' : 'bg-zinc-50 text-zinc-900'} flex flex-col lg:flex-row font-sans overflow-hidden transition-colors`}>
+    <div className={`min-h-screen ${darkMode ? 'bg-black text-white' : 'bg-zinc-50 text-zinc-900'} flex flex-col lg:flex-row font-sans overflow-hidden transition-colors ${isNoAnimationsActive ? 'carlin-no-animations' : ''}`}>
+      <style>
+        {`
+          .carlin-no-animations *, .carlin-no-animations *::before, .carlin-no-animations *::after {
+            animation-duration: 0s !important;
+            transition-duration: 0s !important;
+            transition-delay: 0s !important;
+            animation-delay: 0s !important;
+          }
+        `}
+      </style>
+
       <CombinedBanner onClose={() => setIsCombinedBannerVisible(false)} />
       
       {isAuthenticated && (
@@ -281,7 +312,7 @@ const App: React.FC = () => {
           <NavButton icon={<Icons.Play className="w-6 h-6" />} label="Rios" active={currentView === 'reels'} onClick={() => setCurrentView('reels')} darkMode={darkMode} />
           <NavButton icon={<Icons.User className="w-6 h-6" />} label="Perfil" active={currentView === 'profile'} onClick={() => setCurrentView('profile')} darkMode={darkMode} />
           <div className="mt-auto">
-             <button onClick={handleLogout} className="flex items-center gap-4 p-4 text-zinc-500 hover:text-red-500 transition-colors">
+             <button onClick={() => { sessionStorage.removeItem('carlin_session'); setIsAuthenticated(false); setCurrentView('login'); }} className="flex items-center gap-4 p-4 text-zinc-500 hover:text-red-500 transition-colors">
                 <span className="text-xl">🚪</span>
                 <span className="text-[10px] tracking-widest font-black uppercase">Sair com Segurança</span>
              </button>

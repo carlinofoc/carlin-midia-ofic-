@@ -137,10 +137,8 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; l
   };
 
   useEffect(() => {
-    // Carlin Engine v5.3 Autoplay logic
-    // if (LiteModeManager.isLiteEnabled()) { videoPlayer.setAutoPlay(false) } 
-    // else { videoPlayer.setAutoPlay(true) }
-    const isLite = liteModeManager.isLiteEnabled();
+    // Corrected getter access: isLiteEnabled is a getter, not a method
+    const isLite = liteModeManager.isLiteEnabled;
     const shouldDisableAutoplay = isLite && liteConfig.disableAutoPlayVideos;
 
     if (shouldDisableAutoplay) {
@@ -173,11 +171,13 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; l
 
   const isUserVerified = (isOwnPost && currentUser?.isFaciallyVerified) || (!isOwnPost && post.isVerified);
   
-  // Strict Glide-like optimization logic
+  // Intercepting image requests using the liteBitmapOptions equivalent
   const mediaUrl = post.media[0];
   const displayMediaUrl = post.type === 'image' 
     ? liteModeManager.getOptimizedImageUrl(mediaUrl) 
     : mediaUrl;
+
+  const liteImgOpts = liteModeManager.getLiteImageConfig();
 
   return (
     <article className="bg-transparent mb-10 border-b border-zinc-900/50 pb-8 animate-in fade-in duration-500">
@@ -212,19 +212,28 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; l
         {post.type === 'video' ? (
           <div className="relative w-full h-full cursor-pointer" onClick={toggleVideo}>
             <video ref={videoRef} src={mediaUrl} className="w-full h-full object-cover" loop muted playsInline />
-            {(!isPlaying || (liteModeManager.isLiteEnabled() && liteConfig.disableAutoPlayVideos)) && (
+            {/* Corrected getter access: isLiteEnabled is a getter, not a method */}
+            {(!isPlaying || (liteModeManager.isLiteEnabled && liteConfig.disableAutoPlayVideos)) && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                 <Icons.Play className="w-12 h-12 text-white/50" />
               </div>
             )}
-            {liteModeManager.isLiteEnabled() && liteConfig.disableAutoPlayVideos && !isPlaying && (
+            {/* Corrected getter access: isLiteEnabled is a getter, not a method */}
+            {liteModeManager.isLiteEnabled && liteConfig.disableAutoPlayVideos && !isPlaying && (
               <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 rounded text-[7px] font-black uppercase text-white">
                 Autoplay Off (Lite)
               </div>
             )}
           </div>
         ) : (
-          <img src={displayMediaUrl} className="w-full h-full object-cover" loading="lazy" />
+          <img 
+            src={displayMediaUrl} 
+            className="w-full h-full object-cover" 
+            loading="lazy"
+            style={{ 
+              imageRendering: liteImgOpts.renderingHint as any 
+            }}
+          />
         )}
         {showHeart && (
           <div className="absolute inset-0 flex items-center justify-center animate-in zoom-in-50 duration-300 pointer-events-none">
@@ -253,7 +262,7 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; l
           <div className="pt-4">
             <button onClick={toggleInsights} className="text-[9px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica v5.3'}
+              {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica v5.9'}
             </button>
             {showInsights && post.scores && (
               <div className="mt-3 p-6 bg-zinc-900 rounded-[2rem] border border-zinc-800 space-y-4 animate-in slide-in-from-top-2 duration-300">
