@@ -1,4 +1,3 @@
-
 export type View = 'feed' | 'reels' | 'explore' | 'messages' | 'profile' | 'admin' | 'create' | 'terms' | 'privacy' | 'download' | 'register' | 'login' | 'dashboard' | 'verification' | 'biometric_policy' | 'ad_controls' | 'monetization_manifesto' | 'beta_center' | 'creator_plus' | 'beta_terms' | 'roadmap' | 'creator_plus_faq' | 'monetization_info' | 'cancel_subscription' | 'notification_settings' | 'developer_info' | 'developer_manifesto' | 'advanced_settings' | 'security_center' | 'impact_social' | 'support' | 'monetization_status' | 'live_session' | 'membership_manager';
 export type FeedMode = 'followers' | 'discovery' | 'relevance';
 export type FeedFormatPreference = 'posts' | 'videos' | 'balanced';
@@ -15,6 +14,49 @@ export enum VerificationLevel {
 export type CreatorTier = 'pequeno' | 'medio' | 'grande';
 export type WithdrawalStatus = 'PROCESSING' | 'PAID' | 'REJECTED' | 'REFUSED';
 export type PaymentMethod = 'PayPal' | 'PIX' | 'Transferência Bancária';
+
+export type MonetizationLevel = 'NOT_ELIGIBLE' | 'CREATOR_PROGRAM' | 'PARTIAL_MONETIZATION' | 'ADVANCED_PARTIAL_MONETIZATION' | 'FULL_MONETIZATION';
+
+/**
+ * Replicates Python: class CreatorDashboard logic
+ */
+export interface CreatorDashboardSnapshot {
+  creator_id: string;
+  followers: number;
+  total_views: number;
+  views_last_12_months: number;
+  monetization_level: MonetizationLevel;
+  estimated_revenue: number;
+  next_goal: string;
+  progress_percentage: number;
+  last_update: string;
+  disclaimer?: string;
+}
+
+/**
+ * Fix: Added MonthlyCreatorStats interface based on Python class MonthlyCreatorStats
+ */
+export interface MonthlyCreatorStats {
+  creator_id: string;
+  year: number;
+  month: number;
+  followers: number;
+  views_in_month: number;
+  total_views: number;
+  monetization_level: MonetizationLevel;
+  estimated_revenue: number;
+  created_at: string;
+}
+
+export interface CreatorBenefits {
+  message?: string;
+  badge: boolean;
+  highlight: boolean;
+  revenue_share: boolean;
+  bonus: boolean;
+  priority_campaigns?: boolean;
+  revenue_share_percentage?: number; 
+}
 
 export interface PayoutDestination {
   pixKey?: string;
@@ -96,8 +138,10 @@ export interface User {
   membershipTiers?: MembershipTier[];
   activeSubscriptions?: UserSubscription[];
   withdrawalHistory?: WithdrawalRequest[];
-  points?: number; // Pontos acumulados assistindo lives
-  boostedViews?: number; // Visualizações aceleradas via engajamento de lives
+  points?: number; 
+  boostedViews?: number;
+  isActive?: boolean;
+  firstViewDate?: string; 
 }
 
 export interface EncryptedPayload {
@@ -157,7 +201,7 @@ export interface Post {
   duration?: number;
   monetization?: MonetizationResult;
   exclusiveTierId?: string;
-  liveEngagementBoost?: number; // Incremento de engajamento via pontos
+  liveEngagementBoost?: number; 
   liveActive?: boolean;
   scores?: {
     amigos: number;

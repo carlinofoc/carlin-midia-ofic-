@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, Suspense } from 'react';
 import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig, LiteMode, SubscriptionStatus, VerificationLevel, WithdrawalRequest, PaymentMethod, WithdrawalStatus } from './types';
 import { Icons, BrandLogo } from './constants';
@@ -109,24 +108,25 @@ const App: React.FC = () => {
     if (!identity) {
       setCurrentView('register');
     } else if (sessionActive) {
+      // REPLICATED FROM PYTHON TEST CASE: followers=1200, views=180k, first_view=2025-03-01
       const mockedUser: User = { 
         ...identity!, 
-        followers: 1240, 
-        viewsLastYear: 612340,
+        followers: 1200, 
+        viewsLastYear: 180000,
         averageViewsPerVideo: 15400,
         monetizationEnrolled: true,
         totalRevenue: 1820.50,
         availableBalance: 920.25,
-        points: 450, // Initial points for demo
-        displayName: 'Carlin', 
-        username: 'carlin_ofic',
+        points: 450, 
+        displayName: 'Carlinho Ofíc', 
+        username: 'carlinho_ofic',
+        firstViewDate: '2025-03-01', // Data exata do snippet Python
+        isActive: true, // account_active=True
         membershipTiers: [
-          { id: 't1', name: 'Bronze', price: 5, benefits: ['Acesso antecipado'], subscriberCount: 42 },
-          { id: 't2', name: 'Prata', price: 10, benefits: ['Tutorial avançado'], subscriberCount: 15 }
+          { id: 't1', name: 'Bronze', price: 5, benefits: ['Acesso antecipado'], subscriberCount: 42 }
         ],
         withdrawalHistory: [
-          { id: 'h1', amount: 350, method: 'PIX' as PaymentMethod, status: 'PAID' as WithdrawalStatus, date: '12/04/2024' },
-          { id: 'h2', amount: 200, method: 'PayPal' as PaymentMethod, status: 'PROCESSING' as WithdrawalStatus, date: '20/05/2024' }
+          { id: 'h1', amount: 350, method: 'PIX' as PaymentMethod, status: 'PAID' as WithdrawalStatus, date: '12/04/2024' }
         ],
         activeSubscriptions: []
       };
@@ -201,7 +201,7 @@ const App: React.FC = () => {
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
     setLiteMode(startLite ? LiteMode.LITE_ANTIGO : LiteMode.NORMAL);
-    const mockedUser = { ...user, followers: 65, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, displayName: 'Carlin', username: 'carlin_ofic', points: 0 };
+    const mockedUser = { ...user, followers: 65, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, displayName: 'Carlinho Ofíc', username: 'carlinho_ofic', points: 0, firstViewDate: new Date().toISOString().split('T')[0], isActive: true };
     setCurrentUser(mockedUser);
     setIsAuthenticated(true);
     setCurrentView('feed');
@@ -218,7 +218,7 @@ const App: React.FC = () => {
     if (!isAuthenticated) {
         if (currentView === 'register') return <Registration onComplete={handleRegistrationComplete} onNavigateToLogin={() => setCurrentView('login')} />;
         return <Login onLogin={(u) => { 
-          const mocked = { ...u, followers: 1240, viewsLastYear: 612340, averageViewsPerVideo: 15400, monetizationEnrolled: true, totalRevenue: 1820.50, availableBalance: 920.25, points: 150, displayName: 'Carlin', username: 'carlin_ofic' };
+          const mocked = { ...u, followers: 1200, viewsLastYear: 180000, averageViewsPerVideo: 15400, monetizationEnrolled: true, totalRevenue: 1820.50, availableBalance: 920.25, points: 150, displayName: 'Carlinho Ofíc', username: 'carlinho_ofic', firstViewDate: '2025-03-01', isActive: true };
           setCurrentUser(mocked as User); 
           setIsAuthenticated(true); 
           setCurrentView('feed'); 
@@ -276,6 +276,7 @@ const App: React.FC = () => {
           onOpenSupport={() => setCurrentView('support')}
           onOpenMonetizationStatus={() => setCurrentView('monetization_status')}
           onOpenMembershipManager={() => setCurrentView('membership_manager')}
+          onOpenAdmin={() => setCurrentView('admin')}
         />
       );
       case 'membership_manager': return <MembershipManager user={currentUser!} onUpdateUser={(u) => setCurrentUser(u)} onBack={() => setCurrentView('profile')} />;

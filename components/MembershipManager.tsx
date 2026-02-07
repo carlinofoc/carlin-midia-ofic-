@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { User, MembershipTier } from '../types';
 import { impactService } from '../services/impactService';
@@ -27,7 +26,8 @@ const MembershipManager: React.FC<MembershipManagerProps> = ({ user, onUpdateUse
       setShowAdd(false);
       setNewTier({ name: '', price: 10, benefits: '' });
     } else {
-      alert(res.motivo);
+      // Fix: Handled potential undefined 'motivo' property to avoid displaying "undefined" in the alert
+      alert(res.motivo || "Ocorreu um erro ao criar o nível de assinatura.");
     }
   };
 
@@ -168,7 +168,7 @@ const MembershipManager: React.FC<MembershipManagerProps> = ({ user, onUpdateUse
         <div className="p-10 bg-indigo-600/5 border border-indigo-500/10 rounded-[3rem] text-center space-y-4">
            <h4 className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.3em]">Repasse Justo</h4>
            <p className="text-xs text-zinc-500 leading-relaxed italic">
-             "O Carlin retém apenas <span className="text-white font-bold">5%</span> sobre as assinaturas de membros para cobrir custos operacionais, garantindo que a maior parte do valor fique com quem gera o conteúdo."
+             "O Carlin retém apenas <span className="text-white font-bold">5%</span> sobre as assinaturas de membros para coubrir custos operacionais, garantindo que a maior parte do valor fique com quem gera o conteúdo."
            </p>
         </div>
       </div>
