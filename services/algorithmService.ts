@@ -1,13 +1,11 @@
 
 import { Post, User } from '../types';
+import { impactService } from './impactService';
 
 /**
- * Carlin Relevance Engine v5.2
- * Highly optimized ranking based on following status, tags, and engagement.
+ * Carlin Relevance Engine v5.3 - Live Boost Integration
  */
 
-// Simulated "Following" list for the demonstration of the algorithm
-// In a real app, this would come from the database/user profile
 const USER_FOLLOWS = ["Carlin", "AmigoY", "expert_0", "expert_5"];
 const USER_TAGS = ["ClashRoyale", "Marketing Digital", "Growth"];
 
@@ -61,6 +59,15 @@ export const rankFeed = (posts: Post[], user: User): Post[] => {
 
       // 5. Weight: Verification Bonus
       if (post.isVerified) score += 0.5;
+
+      // 6. INTEGRATION v7.6: Live Boost Impact on Reach
+      // Rule: alcanceFinal = alcanceBase * (1 + boostEngajamento)
+      if (post.type === 'live' || post.type === 'video') {
+         const adsImpact = impactService.calculateAdsImpact(post, user);
+         if (adsImpact.reachMultiplier > 1.0) {
+            score *= adsImpact.reachMultiplier;
+         }
+      }
 
       return {
         ...post,

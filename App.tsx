@@ -33,6 +33,7 @@ import SupportScreen from './components/SupportScreen';
 import MonetizationStatus from './components/MonetizationStatus';
 import MembershipManager from './components/MembershipManager';
 import AdminPanel from './components/AdminPanel';
+import LiveSession from './components/LiveSession';
 import { rankFeed } from './services/algorithmService';
 import { dbService } from './services/dbService';
 import { liteModeManager, networkLimiter } from './services/liteModeService';
@@ -51,6 +52,7 @@ const App: React.FC = () => {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
+  const [activeLivePost, setActiveLivePost] = useState<Post | null>(null);
   const [isCombinedBannerVisible, setIsCombinedBannerVisible] = useState<boolean>(() => {
     return localStorage.getItem('carlin_combined_banner_dismissed') !== 'true';
   });
@@ -115,6 +117,7 @@ const App: React.FC = () => {
         monetizationEnrolled: true,
         totalRevenue: 1820.50,
         availableBalance: 920.25,
+        points: 450, // Initial points for demo
         displayName: 'Carlin', 
         username: 'carlin_ofic',
         membershipTiers: [
@@ -156,26 +159,30 @@ const App: React.FC = () => {
     const loadLimit = isLiteActive ? 10 : 40;
     const categories = ["Marketing Digital", "Estratégia", "Growth", "Design", "Monetização", "Storytelling", "AI"];
     
-    const generatedPosts: Post[] = Array.from({ length: loadLimit }).map((_, i) => ({
-      id: `post-${i}`,
-      autor_id: `u-${i}`,
-      username: `expert_${i}`,
-      userAvatar: `https://picsum.photos/seed/post-${i}/150/150`,
-      content: `Insights estratégicos sobre ${categories[i % categories.length]}. Conteúdo otimizado para o seu perfil.`,
-      category: categories[i % categories.length],
-      media: [i % 4 === 0 ? 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-dancing-2322-large.mp4' : `https://picsum.photos/seed/media-${i}/1080/1080`],
-      type: i % 4 === 0 ? 'video' : 'image',
-      likes: Math.floor(Math.random() * 500),
-      comments: Math.floor(Math.random() * 50),
-      shares: Math.floor(Math.random() * 20),
-      views: Math.floor(Math.random() * 10000) + 2000, 
-      duration: i % 4 === 0 ? (i % 8 === 0 ? 220 : 65) : 0, 
-      createdAt: new Date(Date.now() - i * 3600000).toISOString(),
-      trendingScore: Math.floor(Math.random() * 100),
-      timestamp: `${i + 1}h atrás`,
-      isVerified: i % 5 === 0,
-      exclusiveTierId: i === 3 ? 't1' : undefined
-    } as Post));
+    const generatedPosts: Post[] = Array.from({ length: loadLimit }).map((_, i) => {
+      const type = i === 2 ? 'live' : (i % 4 === 0 ? 'video' : 'image');
+      return {
+        id: `post-${i}`,
+        autor_id: `u-${i}`,
+        username: `expert_${i}`,
+        userAvatar: `https://picsum.photos/seed/post-${i}/150/150`,
+        content: type === 'live' ? 'AO VIVO: Estratégias de Crescimento 2025!' : `Insights estratégicos sobre ${categories[i % categories.length]}. Conteúdo otimizado para o seu perfil.`,
+        category: categories[i % categories.length],
+        media: [i % 4 === 0 ? 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-dancing-2322-large.mp4' : `https://picsum.photos/seed/media-${i}/1080/1080`],
+        type: type,
+        likes: Math.floor(Math.random() * 500),
+        comments: Math.floor(Math.random() * 50),
+        shares: Math.floor(Math.random() * 20),
+        views: Math.floor(Math.random() * 10000) + 2000, 
+        duration: i % 4 === 0 ? (i % 8 === 0 ? 220 : 65) : 0, 
+        createdAt: new Date(Date.now() - i * 3600000).toISOString(),
+        trendingScore: Math.floor(Math.random() * 100),
+        timestamp: type === 'live' ? 'AO VIVO' : `${i + 1}h atrás`,
+        isVerified: i % 5 === 0,
+        exclusiveTierId: i === 3 ? 't1' : undefined,
+        liveEngagementBoost: type === 'live' ? Math.floor(Math.random() * 15) : undefined
+      } as Post;
+    });
 
     setFeedItems(rankFeed(generatedPosts, currentUser));
 
@@ -194,10 +201,15 @@ const App: React.FC = () => {
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
     setLiteMode(startLite ? LiteMode.LITE_ANTIGO : LiteMode.NORMAL);
-    const mockedUser = { ...user, followers: 65, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, displayName: 'Carlin', username: 'carlin_ofic' };
+    const mockedUser = { ...user, followers: 65, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, displayName: 'Carlin', username: 'carlin_ofic', points: 0 };
     setCurrentUser(mockedUser);
     setIsAuthenticated(true);
     setCurrentView('feed');
+  };
+
+  const handleOpenLive = (post: Post) => {
+    setActiveLivePost(post);
+    setCurrentView('live_session');
   };
 
   const renderView = () => {
@@ -206,7 +218,7 @@ const App: React.FC = () => {
     if (!isAuthenticated) {
         if (currentView === 'register') return <Registration onComplete={handleRegistrationComplete} onNavigateToLogin={() => setCurrentView('login')} />;
         return <Login onLogin={(u) => { 
-          const mocked = { ...u, followers: 1240, viewsLastYear: 612340, averageViewsPerVideo: 15400, monetizationEnrolled: true, totalRevenue: 1820.50, availableBalance: 920.25, displayName: 'Carlin', username: 'carlin_ofic' };
+          const mocked = { ...u, followers: 1240, viewsLastYear: 612340, averageViewsPerVideo: 15400, monetizationEnrolled: true, totalRevenue: 1820.50, availableBalance: 920.25, points: 150, displayName: 'Carlin', username: 'carlin_ofic' };
           setCurrentUser(mocked as User); 
           setIsAuthenticated(true); 
           setCurrentView('feed'); 
@@ -240,12 +252,14 @@ const App: React.FC = () => {
               onCloseBanner={() => setShowInstaBanner(false)} 
               onOpenInfo={() => setShowReachInfo(true)} 
               onOpenCreate={() => setCurrentView('create')} 
+              onOpenLive={handleOpenLive}
               liteConfig={liteConfig}
             />
           </div>
         );
       case 'explore': return <Explore posts={feedItems as Post[]} />;
       case 'reels': return <Reels liteConfig={liteConfig} />;
+      case 'live_session': return <LiveSession post={activeLivePost!} user={currentUser!} onUpdateUser={setCurrentUser} onBack={() => setCurrentView('feed')} />;
       case 'admin': return <AdminPanel currentUser={currentUser!} onUpdateUser={setCurrentUser} onBack={() => setCurrentView('profile')} />;
       case 'profile': return (
         <Profile 

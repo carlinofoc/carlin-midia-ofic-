@@ -12,10 +12,11 @@ interface FeedProps {
   onCloseBanner?: () => void;
   onOpenInfo?: () => void;
   onOpenCreate?: () => void;
+  onOpenLive?: (post: Post) => void;
   liteConfig: LiteConfig;
 }
 
-const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onCloseBanner, onOpenInfo, onOpenCreate, liteConfig }) => {
+const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onCloseBanner, onOpenInfo, onOpenCreate, onOpenLive, liteConfig }) => {
   return (
     <div className="flex flex-col w-full">
       {showInstaBanner && (
@@ -72,7 +73,7 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
               return <AdItem key={item.id} ad={item as Ad} />;
             }
             const postItem = item as Post;
-            return <PostCard key={item.id} post={postItem} isOwnPost={postItem.autor_id === currentUser.id} currentUser={currentUser} liteConfig={liteConfig} />;
+            return <PostCard key={item.id} post={postItem} isOwnPost={postItem.autor_id === currentUser.id} currentUser={currentUser} onOpenLive={onOpenLive} liteConfig={liteConfig} />;
           })}
           
           <div className="px-6 py-20 text-center space-y-6">
@@ -99,7 +100,7 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
   );
 };
 
-const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser: User; liteConfig: LiteConfig }> = ({ post, isOwnPost, currentUser, liteConfig }) => {
+const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser: User; onOpenLive?: (p: Post) => void; liteConfig: LiteConfig }> = ({ post, isOwnPost, currentUser, onOpenLive, liteConfig }) => {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
   const [showInsights, setShowInsights] = useState(false);
@@ -124,6 +125,10 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser: User; li
   };
 
   const handleDoubleClick = () => {
+    if (post.type === 'live') {
+      onOpenLive?.(post);
+      return;
+    }
     if (!liked) {
       toggleLike();
     } else {
@@ -247,18 +252,23 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser: User; li
                 )}
               </div>
             ) : post.type === 'live' ? (
-               <div className="relative w-full h-full bg-black flex items-center justify-center">
+               <div className="relative w-full h-full bg-black flex items-center justify-center cursor-pointer" onClick={() => onOpenLive?.(post)}>
                   <div className="absolute top-4 left-4 z-10 flex gap-2">
                      <div className="bg-red-600 px-2 py-0.5 rounded text-[7px] font-black text-white uppercase tracking-widest">LIVE</div>
                      <div className="bg-black/60 px-2 py-0.5 rounded text-[7px] font-black text-zinc-300 uppercase tracking-widest flex items-center gap-1">
                         <span className="w-1 h-1 rounded-full bg-zinc-400"></span> 1.2K
                      </div>
                   </div>
+                  {post.liveEngagementBoost && (
+                    <div className="absolute top-4 right-4 z-10">
+                       <span className="bg-blue-600/20 text-blue-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-lg border border-blue-500/20 backdrop-blur-md">Impulso: +{post.liveEngagementBoost}%</span>
+                    </div>
+                  )}
                   <img src={post.userAvatar} className="w-32 h-32 rounded-full border-4 border-red-600 animate-pulse" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-                  <div className="absolute bottom-6 left-6 right-6">
-                     <p className="text-white text-xs font-black uppercase tracking-widest mb-1 italic">Transmitindo agora...</p>
-                     <div className="flex gap-1">
+                  <div className="absolute bottom-6 left-6 right-6 text-center">
+                     <p className="text-white text-xs font-black uppercase tracking-widest mb-2 italic">Assistir Transmissão</p>
+                     <div className="flex gap-1 justify-center">
                         <div className="h-1 w-8 bg-red-600 rounded-full"></div>
                         <div className="h-1 w-4 bg-red-600/30 rounded-full"></div>
                      </div>

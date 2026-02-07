@@ -96,6 +96,8 @@ export interface User {
   membershipTiers?: MembershipTier[];
   activeSubscriptions?: UserSubscription[];
   withdrawalHistory?: WithdrawalRequest[];
+  points?: number; // Pontos acumulados assistindo lives
+  boostedViews?: number; // Visualizações aceleradas via engajamento de lives
 }
 
 export interface EncryptedPayload {
@@ -155,6 +157,8 @@ export interface Post {
   duration?: number;
   monetization?: MonetizationResult;
   exclusiveTierId?: string;
+  liveEngagementBoost?: number; // Incremento de engajamento via pontos
+  liveActive?: boolean;
   scores?: {
     amigos: number;
     explorar: number;

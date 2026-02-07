@@ -66,6 +66,19 @@ const MonetizationStatus: React.FC<MonetizationStatusProps> = ({ user, onBack })
           </div>
         )}
 
+        <div className="bg-blue-600/5 border border-blue-500/20 p-6 rounded-[2rem] flex items-center gap-5">
+           <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shrink-0">
+              <span className="text-2xl">🔥</span>
+           </div>
+           <div>
+              <h4 className="text-[10px] font-black uppercase text-blue-400 tracking-widest">Dica de Aceleração</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Lives com alto engajamento aceleram em até <span className="text-white font-black">2x</span> a contabilização de views. 
+                Você já ganhou <span className="text-green-500 font-black">{(user.boostedViews || 0).toLocaleString()}</span> views via impulsos.
+              </p>
+           </div>
+        </div>
+
         {/* Requirement Dashboards */}
         <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${user.isMonetizationSuspended ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
            <RequirementCard 
@@ -150,6 +163,7 @@ const MonetizationStatus: React.FC<MonetizationStatusProps> = ({ user, onBack })
             <div className="space-y-3">
                <FaqItem q="As visualizações expiram?" a="O requisito de 500k considera os últimos 12 meses acumulados." />
                <FaqItem q="Posso perder a monetização?" a="Sim, se houver violação das regras éticas ou inatividade por mais de 6 meses." />
+               <FaqItem q="As lives ajudam nas views?" a="Sim, o engajamento de live é convertido em visualizações válidas para o programa de anúncios." />
                <FaqItem q="O selo Ouro ajuda nos ganhos?" a="Indiretamente sim, pois gera mais confiança e conversão em membros." />
             </div>
           )}
