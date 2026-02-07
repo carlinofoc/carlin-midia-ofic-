@@ -17,6 +17,11 @@ const MOCK_CHATS: Chat[] = [
       avatar: 'https://picsum.photos/seed/chat1/100/100', 
       followers: 120, 
       following: 100,
+      // Added missing properties viewsLastYear and monetizationEnrolled
+      viewsLastYear: 0,
+      // Added missing required property
+      averageViewsPerVideo: 0,
+      monetizationEnrolled: false,
       nome_encrypted: { encrypted: '', iv: '', tag: '' },
       email_encrypted: { encrypted: '', iv: '', tag: '' },
       passwordHash: '',
@@ -45,6 +50,11 @@ const MOCK_CHATS: Chat[] = [
       followers: 1000, 
       following: 0, 
       isVerified: true,
+      // Added missing properties viewsLastYear and monetizationEnrolled
+      viewsLastYear: 0,
+      // Added missing required property
+      averageViewsPerVideo: 0,
+      monetizationEnrolled: false,
       nome_encrypted: { encrypted: '', iv: '', tag: '' },
       email_encrypted: { encrypted: '', iv: '', tag: '' },
       passwordHash: '',

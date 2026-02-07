@@ -1,138 +1,260 @@
 
-import React, { useState } from 'react';
-import { Post } from '../types';
-import { Icons } from '../constants';
+import React, { useState, useRef, useEffect } from 'react';
+import { Post, Story, User, MusicTrack } from '../types';
 import { generateCaption } from '../services/geminiService';
+import MusicPicker from './MusicPicker';
+import { liteModeManager } from '../services/liteModeService';
+import { impactService } from '../services/impactService';
+
+type PublishType = 'post' | 'reel' | 'story' | 'live';
 
 interface CreatePostProps {
   onPostCreated: (post: Post) => void;
+  onStoryCreated: (story: Story) => void;
   onCancel: () => void;
+  currentUser: User; 
 }
 
-const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onCancel }) => {
-  const [step, setStep] = useState<'upload' | 'caption'>('upload');
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onStoryCreated, onCancel, currentUser }) => {
+  const [publishType, setPublishType] = useState<PublishType>('post');
+  const [step, setStep] = useState<'upload' | 'details'>('upload');
+  const [mediaFile, setMediaFile] = useState<{ url: string, type: 'image' | 'video', thumb?: string } | null>(null);
   const [caption, setCaption] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+  const [showMusicPicker, setShowMusicPicker] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState<MusicTrack | null>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const livePreviewRef = useRef<HTMLVideoElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedFile(reader.result as string);
-        setStep('caption');
-      };
-      reader.readAsDataURL(file);
+  const features = impactService.getUnlockedFeatures(currentUser);
+  const canLive = features.canLive;
+
+  useEffect(() => {
+    if (publishType === 'live' && canLive) {
+      startLivePreview();
+    } else {
+      stopLivePreview();
+      if (publishType !== 'live') setStep('upload');
+    }
+    return () => stopLivePreview();
+  }, [publishType]);
+
+  const startLivePreview = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setLiveStream(stream);
+      if (livePreviewRef.current) {
+        livePreviewRef.current.srcObject = stream;
+      }
+      setStep('details');
+    } catch (err) {
+      console.error("Erro ao acessar câmera para Live:", err);
+      alert("Permissão de câmera/microfone negada.");
+      setPublishType('post');
     }
   };
 
-  const handleGenerateAICaption = async () => {
-    setIsGenerating(true);
-    const newCaption = await generateCaption("a beautiful landscape photo with sunset");
-    setCaption(newCaption);
-    setIsGenerating(false);
+  const stopLivePreview = () => {
+    if (liveStream) {
+      liveStream.getTracks().forEach(track => track.stop());
+      setLiveStream(null);
+    }
   };
 
-  const handleSubmit = () => {
-    if (!selectedFile) return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    // Corrected 'userId' to 'autor_id' and added missing required fields to match Post interface
-    const newPost: Post = {
-      id: Date.now().toString(),
-      autor_id: 'me',
-      username: 'nexus_user',
-      userAvatar: 'https://picsum.photos/seed/me/100/100',
-      content: caption,
-      media: [selectedFile],
-      type: 'image',
-      likes: 0,
-      comments: 0,
-      // Fix: Add missing properties to satisfy Post interface
-      shares: 0,
-      category: 'Geral',
-      createdAt: new Date().toISOString(),
-      trendingScore: 0,
-      timestamp: 'Just now'
+    const isVideo = file.type.startsWith('video/');
+    
+    if (publishType === 'post' && isVideo) {
+      return alert("Erro: Escolha uma mídia (Imagem) para Post!");
+    }
+    if ((publishType === 'reel' || publishType === 'story') && !isVideo) {
+      return alert(`Erro: Escolha uma mídia (Vídeo) para ${publishType === 'reel' ? 'Reel' : 'Story'}!`);
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const url = reader.result as string;
+      setMediaFile({ url, type: isVideo ? 'video' : 'image' });
+      setStep('details');
+      if (isVideo) {
+        setTimeout(generateThumbnail, 500);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const generateThumbnail = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const thumbUrl = canvas.toDataURL('image/jpeg', 0.6);
+      setMediaFile(prev => prev ? { ...prev, thumb: thumbUrl } : null);
+    }
+  };
+
+  const handlePublish = () => {
+    if (publishType === 'live' && !canLive) {
+      return alert('Erro: Você precisa ter pelo menos 50 seguidores para iniciar uma Live!');
+    }
+    
+    if (publishType !== 'live' && !mediaFile) {
+      return alert('Erro: Escolha uma mídia antes de publicar!');
+    }
+
+    const isWeak = liteModeManager.network.isConnectionWeak() || liteModeManager.isLiteEnabled;
+    
+    const publication = {
+      type: publishType,
+      media: mediaFile?.url || null,
+      text: caption,
+      music: selectedMusic ? (isWeak ? selectedMusic.urlLow : selectedMusic.urlHigh) : null,
+      musicAttribution: selectedMusic?.attribution ? selectedMusic.artist : null,
+      user: { id: currentUser.id, name: currentUser.displayName, followers: currentUser.followers },
+      createdAt: new Date(),
     };
 
-    onPostCreated(newPost);
+    if (publishType === 'story') {
+      const newStory: Story = {
+        id: `story-${Date.now()}`,
+        userId: currentUser.id,
+        username: currentUser.username,
+        userAvatar: currentUser.avatar,
+        media: publication.media!,
+        viewed: false,
+        musicUrl: publication.music || undefined,
+        musicAttribution: publication.musicAttribution || undefined
+      };
+      onStoryCreated(newStory);
+    } else {
+      const newPost: Post = {
+        id: `post-${Date.now()}`,
+        autor_id: currentUser.id,
+        username: currentUser.username,
+        userAvatar: currentUser.avatar,
+        content: publication.text,
+        media: publication.type === 'live' ? [] : [publication.media!],
+        type: publication.type === 'reel' ? 'video' : (publication.type === 'live' ? 'live' : 'image'),
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        category: publication.type === 'reel' ? 'Rio' : (publication.type === 'live' ? 'AO VIVO' : 'Geral'),
+        createdAt: publication.createdAt.toISOString(),
+        trendingScore: 0,
+        timestamp: 'Agora',
+        isVerified: currentUser.isVerified,
+        musicUrl: publication.music || undefined,
+        musicAttribution: publication.musicAttribution || undefined
+      };
+      onPostCreated(newPost);
+    }
+
+    alert(`Sucesso: ${publishType.toUpperCase()} publicado com sucesso!`);
     onCancel();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
-      <div className="bg-zinc-900 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-          <button onClick={onCancel} className="text-sm font-bold hover:text-zinc-400">Cancel</button>
-          <h2 className="font-bold">Create New Post</h2>
+    <div className="fixed inset-0 bg-black/95 z-[5000] flex items-center justify-center p-4 md:p-10 backdrop-blur-2xl">
+      <div className="bg-zinc-900 w-full max-w-5xl h-full max-h-[850px] rounded-[3rem] border border-zinc-800 overflow-hidden shadow-3xl flex flex-col md:flex-row">
+        
+        <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+          {publishType === 'live' ? (
+            <div className="w-full h-full relative">
+              <video ref={livePreviewRef} autoPlay muted playsInline className="w-full h-full object-cover -scale-x-100" />
+              {!canLive && (
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center">
+                   <span className="text-4xl mb-4">🔒</span>
+                   <h3 className="text-xl font-black uppercase text-white">Live Bloqueada</h3>
+                   <p className="text-xs text-zinc-500 mt-2">Mínimo 50 seguidores necessários para transmitir.</p>
+                </div>
+              )}
+            </div>
+          ) : step === 'upload' ? (
+            <label className="flex flex-col items-center gap-6 cursor-pointer p-20 border-2 border-dashed border-zinc-800 rounded-[3rem] hover:border-blue-500 transition-all">
+               <span className="text-4xl">{publishType === 'post' ? '🖼️' : '🎬'}</span>
+               <div className="text-center">
+                 <h3 className="text-xl font-black uppercase text-white">Escolher Mídia</h3>
+                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">
+                   {publishType === 'post' ? 'Imagens Apenas' : 'Vídeos Apenas'}
+                 </p>
+               </div>
+               <input type="file" className="hidden" accept={publishType === 'post' ? "image/*" : "video/*"} onChange={handleFileChange} />
+            </label>
+          ) : (
+            <div className="w-full h-full relative">
+               {mediaFile?.type === 'video' ? (
+                 <video ref={videoRef} src={mediaFile.url} className="w-full h-full object-cover" autoPlay muted loop playsInline />
+               ) : (
+                 <img src={mediaFile?.url} className="w-full h-full object-cover" />
+               )}
+            </div>
+          )}
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+
+        <div className="w-full md:w-[420px] bg-zinc-900 border-l border-zinc-800 flex flex-col p-8 space-y-8 overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <button onClick={onCancel} className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Voltar</button>
+            <div className="flex gap-1 bg-black p-1 rounded-2xl border border-zinc-800 overflow-x-auto">
+               <TabBtn active={publishType === 'post'} onClick={() => setPublishType('post')} label="Post" />
+               <TabBtn active={publishType === 'reel'} onClick={() => setPublishType('reel')} label="Reel" />
+               <TabBtn active={publishType === 'story'} onClick={() => setPublishType('story')} label="Story" />
+               <TabBtn active={publishType === 'live'} onClick={() => setPublishType('live')} label="Live" />
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-6">
+            <textarea 
+              value={caption}
+              onChange={e => setCaption(e.target.value)}
+              placeholder="Legenda (opcional)" 
+              className="w-full bg-black/50 border border-zinc-800 rounded-3xl p-6 text-sm text-zinc-200 outline-none focus:border-blue-600 transition-all resize-none min-h-[120px]"
+            />
+            
+            <button 
+              onClick={() => setShowMusicPicker(true)}
+              className={`w-full py-4 border rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${selectedMusic ? 'bg-blue-600/20 border-blue-500 text-blue-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}
+            >
+               🎵 {selectedMusic ? `${selectedMusic.title} - ${selectedMusic.artist}` : 'Adicionar Música'}
+            </button>
+
+            {selectedMusic?.attribution && (
+              <div className="p-4 bg-zinc-800/50 rounded-2xl border border-zinc-700">
+                 <p className="text-[9px] font-black uppercase text-zinc-400 tracking-widest leading-relaxed italic">
+                    🎵 Música: {selectedMusic.artist} (YouTube Audio Library)
+                 </p>
+              </div>
+            )}
+          </div>
+
           <button 
-            onClick={step === 'upload' ? undefined : handleSubmit} 
-            disabled={step === 'upload'}
-            className={`text-sm font-bold text-blue-500 hover:text-blue-400 ${step === 'upload' ? 'opacity-0' : ''}`}
+            onClick={handlePublish}
+            disabled={(publishType !== 'live' && !mediaFile) || (publishType === 'live' && !canLive)}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs active:scale-95 transition-all shadow-2xl disabled:opacity-20"
           >
-            Share
+            Publicar {publishType}
           </button>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 flex flex-col md:flex-row min-h-0">
-          {step === 'upload' ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 space-y-6">
-              <svg className="w-24 h-24 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <h3 className="text-xl font-medium">Drag photos and videos here</h3>
-              <label className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors cursor-pointer">
-                Select from computer
-                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-              </label>
-            </div>
-          ) : (
-            <>
-              <div className="w-full md:w-3/5 bg-black flex items-center justify-center">
-                <img src={selectedFile!} className="max-w-full max-h-full object-contain" />
-              </div>
-              <div className="w-full md:w-2/5 flex flex-col border-l border-zinc-800 bg-zinc-900 p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <img src="https://picsum.photos/seed/me/100/100" className="w-7 h-7 rounded-full" />
-                  <span className="font-bold text-sm">nexus_user</span>
-                </div>
-                
-                <textarea 
-                  value={caption}
-                  onChange={e => setCaption(e.target.value)}
-                  placeholder="Write a caption..." 
-                  className="flex-1 bg-transparent border-none outline-none text-sm resize-none mb-4"
-                />
-
-                <div className="space-y-4">
-                  <button 
-                    onClick={handleGenerateAICaption}
-                    disabled={isGenerating}
-                    className="w-full py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-                  >
-                    {isGenerating ? 'AI Magic...' : '✨ Generate AI Caption'}
-                  </button>
-                  
-                  <div className="flex items-center justify-between py-3 border-y border-zinc-800 cursor-pointer hover:bg-zinc-800 -mx-4 px-4 transition-colors">
-                    <span className="text-sm">Add Location</span>
-                    <Icons.Search className="w-4 h-4 text-zinc-400" />
-                  </div>
-                  
-                  <div className="flex items-center justify-between py-3 border-b border-zinc-800 cursor-pointer hover:bg-zinc-800 -mx-4 px-4 transition-colors">
-                    <span className="text-sm">Accessibility</span>
-                    <Icons.Plus className="w-4 h-4 text-zinc-400 rotate-45" />
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
       </div>
+
+      {showMusicPicker && (
+        <MusicPicker onSelect={(m) => { setSelectedMusic(m); setShowMusicPicker(false); }} onCancel={() => setShowMusicPicker(false)} />
+      )}
     </div>
   );
 };
+
+const TabBtn = ({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) => (
+  <button onClick={onClick} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all shrink-0 ${active ? 'bg-zinc-800 text-white' : 'text-zinc-600'}`}>{label}</button>
+);
 
 export default CreatePost;

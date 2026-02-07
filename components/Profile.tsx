@@ -7,6 +7,7 @@ import EditBio from './EditBio';
 import EditLinks from './EditLinks';
 import { dbService } from '../services/dbService';
 import { liteModeManager } from '../services/liteModeService';
+import { impactService } from '../services/impactService';
 
 interface ProfileProps {
   user: User;
@@ -31,15 +32,19 @@ interface ProfileProps {
   onOpenAdvancedSettings: () => void;
   onOpenImpactSocial?: () => void; 
   onOpenSupport?: () => void;
+  onOpenMonetizationStatus?: () => void;
+  onOpenMembershipManager?: () => void;
 }
 
 const Profile: React.FC<ProfileProps> = ({ 
-  user, isLite, isDark, onOpenDashboard, onOpenVerification, onUpdateUser, onOpenCreatorPlus, onOpenAdvancedSettings, onOpenImpactSocial, onOpenSupport
+  user, isLite, isDark, onOpenDashboard, onOpenVerification, onUpdateUser, onOpenCreatorPlus, onOpenAdvancedSettings, onOpenImpactSocial, onOpenSupport, onOpenMonetizationStatus, onOpenMembershipManager
 }) => {
   const [tab, setTab] = useState<'posts' | 'saved' | 'tagged'>('posts');
   const [showEditPhoto, setShowEditPhoto] = useState(false);
   const [showEditBio, setShowEditBio] = useState(false);
   const [showEditLinks, setShowEditLinks] = useState(false);
+
+  const features = impactService.getUnlockedFeatures(user);
 
   const containerClasses = isDark ? "bg-black text-white" : "bg-zinc-50 text-zinc-900";
   const cardClasses = isDark ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-sm";
@@ -117,9 +122,12 @@ const Profile: React.FC<ProfileProps> = ({
         </div>
 
         <div className="space-y-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <h2 className="font-black text-lg">{user.displayName}</h2>
             {getTierBadge(user.verificationLevel)}
+            {features.hasGrowthBadge && (
+              <span className="bg-blue-600/20 text-blue-400 text-[7px] font-black px-2 py-0.5 rounded-full border border-blue-500/30">📈 Criador em Crescimento</span>
+            )}
           </div>
           <p className="text-xs text-orange-500 font-bold uppercase tracking-widest flex items-center gap-2 leading-none">
             @{user.username}
@@ -132,14 +140,32 @@ const Profile: React.FC<ProfileProps> = ({
         </div>
 
         <div className="grid grid-cols-2 gap-3 pt-4">
-           <button onClick={onOpenDashboard} className="bg-zinc-900 border border-zinc-800 text-white py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all">
+          <button 
+            onClick={features.canSeeBasicAnalytics ? onOpenDashboard : () => alert('Desbloqueie com 50 seguidores.')} 
+            className={`bg-zinc-900 border border-zinc-800 text-white py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all ${!features.canSeeBasicAnalytics ? 'opacity-40 grayscale' : ''}`}
+          >
             <span className="text-xl">📊</span>
-            <span className="text-[8px] font-black uppercase tracking-widest">Métricas Reais</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Métricas Reais {!features.canSeeBasicAnalytics && '🔒'}</span>
           </button>
-          <button onClick={onOpenImpactSocial} className="bg-orange-600/10 border border-orange-500/30 text-orange-500 py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all">
-            <span className="text-xl">🌍</span>
-            <span className="text-[8px] font-black uppercase tracking-widest text-orange-400">Impacto Social</span>
+          
+          <button onClick={onOpenMonetizationStatus} className="bg-indigo-600/10 border border-indigo-500/30 text-indigo-500 py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all">
+            <span className="text-xl">🚀</span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-indigo-400">Jornada Criador</span>
           </button>
+
+          {features.canEnrolMembership && (
+            <button onClick={onOpenMembershipManager} className="bg-purple-600/10 border border-purple-500/30 text-purple-500 py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all col-span-2">
+              <span className="text-xl">⭐</span>
+              <span className="text-[8px] font-black uppercase tracking-widest text-purple-400">Gerenciar Seja Membro</span>
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+           <button onClick={onOpenImpactSocial} className="w-full bg-orange-600/10 border border-orange-500/30 text-orange-500 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-all">
+             <span className="text-xl">🌍</span>
+             <span className="text-[8px] font-black uppercase tracking-widest text-orange-400">Impacto Social & Transparência</span>
+           </button>
         </div>
 
         <button 

@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect, Suspense } from 'react';
-import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig, LiteMode, SubscriptionStatus } from './types';
+import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig, LiteMode, SubscriptionStatus, VerificationLevel, WithdrawalRequest, PaymentMethod, WithdrawalStatus } from './types';
 import { Icons, BrandLogo } from './constants';
 import Feed from './components/Feed';
 import Profile from './components/Profile';
 import CreatePost from './components/CreatePost';
 import Stories from './components/Stories';
+import StoryViewer from './components/StoryViewer';
 import TermsOfUse from './components/TermsOfUse';
 import Registration from './components/Registration';
 import Login from './components/Login';
@@ -29,6 +29,8 @@ import Reels from './components/Reels';
 import BiometricPolicy from './components/BiometricPolicy';
 import ImpactSocialScreen from './components/ImpactSocialScreen';
 import SupportScreen from './components/SupportScreen';
+import MonetizationStatus from './components/MonetizationStatus';
+import MembershipManager from './components/MembershipManager';
 import { rankFeed } from './services/algorithmService';
 import { dbService } from './services/dbService';
 import { liteModeManager, networkLimiter } from './services/liteModeService';
@@ -46,11 +48,12 @@ const App: React.FC = () => {
   const [feedMode, setFeedMode] = useState<FeedMode>('relevance');
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
-  const [showReachInfo, setShowReachInfo] = useState(false);
+  const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [isCombinedBannerVisible, setIsCombinedBannerVisible] = useState<boolean>(() => {
     return localStorage.getItem('carlin_combined_banner_dismissed') !== 'true';
   });
   
+  const [showReachInfo, setShowReachInfo] = useState(false);
   const [showInstaBanner, setShowInstaBanner] = useState<boolean>(() => {
     return localStorage.getItem('carlin_insta_banner_closed') !== 'true';
   });
@@ -102,7 +105,29 @@ const App: React.FC = () => {
     if (!identity) {
       setCurrentView('register');
     } else if (sessionActive) {
-      setCurrentUser(identity);
+      // Sync with GET /api/v1/creator/earnings requirements
+      const mockedUser: User = { 
+        ...identity!, 
+        followers: 1240, 
+        viewsLastYear: 612340,
+        averageViewsPerVideo: 15400,
+        monetizationEnrolled: true,
+        totalRevenue: 1820.50, // totalEarnings
+        availableBalance: 920.25, // availableForWithdraw
+        displayName: 'Carlin', 
+        username: 'carlin_ofic',
+        membershipTiers: [
+          { id: 't1', name: 'Bronze', price: 5, benefits: ['Acesso antecipado'], subscriberCount: 42 },
+          { id: 't2', name: 'Prata', price: 10, benefits: ['Tutorial avançado'], subscriberCount: 15 }
+        ],
+        withdrawalHistory: [
+          // Fix: Corrected 'createdAt' to 'date' and updated status values to match type definition
+          { id: 'h1', amount: 350, method: 'PIX' as PaymentMethod, status: 'PAID' as WithdrawalStatus, date: '12/04/2024' },
+          { id: 'h2', amount: 200, method: 'PayPal' as PaymentMethod, status: 'PROCESSING' as WithdrawalStatus, date: '20/05/2024' }
+        ],
+        activeSubscriptions: []
+      };
+      setCurrentUser(mockedUser);
       setIsAuthenticated(true);
       setCurrentView('feed');
     } else {
@@ -143,38 +168,36 @@ const App: React.FC = () => {
       likes: Math.floor(Math.random() * 500),
       comments: Math.floor(Math.random() * 50),
       shares: Math.floor(Math.random() * 20),
+      views: Math.floor(Math.random() * 10000) + 2000, 
+      duration: i % 4 === 0 ? (i % 8 === 0 ? 220 : 65) : 0, 
       createdAt: new Date(Date.now() - i * 3600000).toISOString(),
       trendingScore: Math.floor(Math.random() * 100),
       timestamp: `${i + 1}h atrás`,
-      isVerified: i % 5 === 0
+      isVerified: i % 5 === 0,
+      exclusiveTierId: i === 3 ? 't1' : undefined
     } as Post));
 
     setFeedItems(rankFeed(generatedPosts, currentUser));
 
-    setStories(Array.from({ length: isLiteActive ? 6 : 12 }).map((_, i) => ({
-      id: `story-${i}`,
-      userId: `s-${i}`,
-      username: `user_${i}`,
-      userAvatar: `https://picsum.photos/seed/story-${i}/100/100`,
-      media: `https://picsum.photos/seed/sm-${i}/1080/1920`,
-      viewed: i > 8
-    })));
-  }, [liteMode, liteConfig, darkMode, adConfig, isAuthenticated, currentUser]);
+    if (stories.length === 0) {
+      setStories(Array.from({ length: isLiteActive ? 6 : 12 }).map((_, i) => ({
+        id: `story-${i}`,
+        userId: `s-${i}`,
+        username: `user_${i}`,
+        userAvatar: `https://picsum.photos/seed/story-${i}/100/100`,
+        media: `https://picsum.photos/seed/sm-${i}/1080/1920`,
+        viewed: i > 8
+      })));
+    }
+  }, [liteMode, liteConfig, darkMode, adConfig, isAuthenticated, currentUser, stories.length]);
 
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
     setLiteMode(startLite ? LiteMode.LITE_ANTIGO : LiteMode.NORMAL);
-    setCurrentUser(user);
+    const mockedUser = { ...user, followers: 65, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, displayName: 'Carlin', username: 'carlin_ofic' };
+    setCurrentUser(mockedUser);
     setIsAuthenticated(true);
     setCurrentView('feed');
-  };
-
-  const handleSubscribe = () => {
-    const updated = { ...currentUser!, isPremium: true, subscriptionStatus: 'active' as SubscriptionStatus };
-    dbService.registrarNoBackend(updated);
-    localStorage.setItem('carlin_id_local', JSON.stringify(updated));
-    setCurrentUser(updated);
-    setCurrentView('profile');
   };
 
   const renderView = () => {
@@ -182,7 +205,14 @@ const App: React.FC = () => {
     
     if (!isAuthenticated) {
         if (currentView === 'register') return <Registration onComplete={handleRegistrationComplete} onNavigateToLogin={() => setCurrentView('login')} />;
-        return <Login onLogin={(u) => { setCurrentUser(u); setIsAuthenticated(true); setCurrentView('feed'); sessionStorage.setItem('carlin_session', 'true'); }} onNavigateToRegister={() => setCurrentView('register')} />;
+        return <Login onLogin={(u) => { 
+          // Sync with API requirements on login
+          const mocked = { ...u, followers: 1240, viewsLastYear: 612340, averageViewsPerVideo: 15400, monetizationEnrolled: true, totalRevenue: 1820.50, availableBalance: 920.25, displayName: 'Carlin', username: 'carlin_ofic' };
+          setCurrentUser(mocked as User); 
+          setIsAuthenticated(true); 
+          setCurrentView('feed'); 
+          sessionStorage.setItem('carlin_session', 'true'); 
+        }} onNavigateToRegister={() => setCurrentView('register')} />;
     }
 
     const isLiteActive = liteMode !== LiteMode.NORMAL;
@@ -203,7 +233,7 @@ const App: React.FC = () => {
               </Suspense>
             )}
 
-            <Stories stories={stories} />
+            <Stories stories={stories} onOpenStory={(idx) => setActiveStoryIndex(idx)} />
             <Feed 
               posts={feedItems} 
               currentUser={currentUser!} 
@@ -230,9 +260,13 @@ const App: React.FC = () => {
           onOpenAdvancedSettings={() => setCurrentView('advanced_settings')}
           onOpenImpactSocial={() => setCurrentView('impact_social')}
           onOpenSupport={() => setCurrentView('support')}
+          onOpenMonetizationStatus={() => setCurrentView('monetization_status')}
+          onOpenMembershipManager={() => setCurrentView('membership_manager')}
         />
       );
-      case 'support': return <SupportScreen onSupport={handleSubscribe} onBack={() => setCurrentView('profile')} />;
+      case 'membership_manager': return <MembershipManager user={currentUser!} onUpdateUser={(u) => setCurrentUser(u)} onBack={() => setCurrentView('profile')} />;
+      case 'monetization_status': return <MonetizationStatus user={currentUser!} onBack={() => setCurrentView('profile')} />;
+      case 'support': return <SupportScreen onSupport={() => {}} onBack={() => setCurrentView('profile')} />;
       case 'impact_social': return <ImpactSocialScreen user={currentUser!} onBack={() => setCurrentView('profile')} />;
       case 'advanced_settings': return (
         <AdvancedSettings 
@@ -244,8 +278,15 @@ const App: React.FC = () => {
         />
       );
       case 'security_center': return <SecurityCenter user={currentUser!} onBack={() => setCurrentView('advanced_settings')} onUpdateUser={(u) => setCurrentUser(u)} />;
-      case 'dashboard': return <Dashboard user={currentUser!} posts={[]} onBack={() => setCurrentView('profile')} onOpenRoadmap={() => setCurrentView('roadmap')} />;
-      case 'create': return <CreatePost onPostCreated={(p) => { setFeedItems([p, ...feedItems]); setCurrentView('feed'); }} onCancel={() => setCurrentView('feed')} />;
+      case 'dashboard': return <Dashboard user={currentUser!} posts={feedItems as Post[]} onBack={() => setCurrentView('profile')} onOpenRoadmap={() => setCurrentView('roadmap')} onUpdateUser={(u) => setCurrentUser(u)} />;
+      case 'create': return (
+        <CreatePost 
+          onPostCreated={(p) => { setFeedItems([p, ...feedItems]); setCurrentView('feed'); }} 
+          onStoryCreated={(s) => { setStories([s, ...stories]); setCurrentView('feed'); }}
+          onCancel={() => setCurrentView('feed')} 
+          currentUser={currentUser!}
+        />
+      );
       case 'verification': return (
         <VerificationProcess 
           user={currentUser!} 
@@ -262,7 +303,7 @@ const App: React.FC = () => {
       case 'ad_controls': return <AdControlPanel config={adConfig} onUpdate={setAdConfig} onBack={() => setCurrentView('profile')} />;
       case 'monetization_manifesto': return <MonetizationManifesto onBack={() => setCurrentView('profile')} />;
       case 'beta_center': return <BetaCenter user={currentUser!} onUpdateUser={(u) => setCurrentUser(u)} onBack={() => setCurrentView('profile')} onOpenTerms={() => setCurrentView('beta_terms')} />;
-      case 'creator_plus': return <CreatorPlus user={currentUser!} onSubscribe={handleSubscribe} onBack={() => setCurrentView('profile')} onOpenFAQ={() => setCurrentView('creator_plus_faq')} onOpenCancel={() => setCurrentView('cancel_subscription')} />;
+      case 'creator_plus': return <CreatorPlus user={currentUser!} onSubscribe={() => {}} onBack={() => setCurrentView('profile')} onOpenFAQ={() => setCurrentView('creator_plus_faq')} onOpenCancel={() => setCurrentView('cancel_subscription')} />;
       case 'roadmap': return <Roadmap onBack={() => setCurrentView('profile')} />;
       case 'notification_settings': return <NotificationSettings user={currentUser!} onUpdate={(p) => {
         const updated = { ...currentUser!, notificationPrefs: p };
@@ -298,6 +339,14 @@ const App: React.FC = () => {
       </style>
 
       <CombinedBanner onClose={() => setIsCombinedBannerVisible(false)} />
+
+      {activeStoryIndex !== null && (
+        <StoryViewer 
+          stories={stories} 
+          initialIndex={activeStoryIndex} 
+          onClose={() => setActiveStoryIndex(null)} 
+        />
+      )}
       
       {isAuthenticated && (
         <nav className={`hidden lg:flex flex-col w-72 border-r ${darkMode ? 'border-zinc-900 bg-black' : 'border-zinc-200 bg-white'} p-8 sticky top-0 h-screen gap-4`}>

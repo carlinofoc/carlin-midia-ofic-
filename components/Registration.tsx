@@ -100,7 +100,14 @@ const Registration: React.FC<RegistrationProps> = ({ onComplete, onNavigateToLog
         onComplete={(data) => executeProvisioningFlow(data)} 
         onCancel={() => setView('form')} 
         onOpenPolicy={() => {}}
-        externalData={regData}
+        /* Fix: Provide missing 'id' to satisfy UserAccount requirement for externalData */
+        externalData={{
+          id: 'temp_reg',
+          name: regData.name,
+          email: regData.email,
+          level: regData.level,
+          consentAccepted: regData.consentAccepted
+        }}
       />
     );
   }

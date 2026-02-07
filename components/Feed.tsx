@@ -99,13 +99,16 @@ const Feed: React.FC<FeedProps> = ({ posts, currentUser, showInstaBanner, onClos
   );
 };
 
-const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; liteConfig: LiteConfig }> = ({ post, isOwnPost, currentUser, liteConfig }) => {
+const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser: User; liteConfig: LiteConfig }> = ({ post, isOwnPost, currentUser, liteConfig }) => {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
   const [showInsights, setShowInsights] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const isSubscriber = currentUser.activeSubscriptions?.some(s => s.creatorId === post.autor_id && s.tierId === post.exclusiveTierId) || isOwnPost;
+  const isLocked = post.exclusiveTierId && !isSubscriber;
 
   const toggleInsights = () => setShowInsights(!showInsights);
 
@@ -130,16 +133,17 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; l
   };
 
   const toggleVideo = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || isLocked) return;
     if (isPlaying) videoRef.current.pause();
     else videoRef.current.play();
     setIsPlaying(!isPlaying);
   };
 
   useEffect(() => {
-    // Corrected getter access: isLiteEnabled is a getter, not a method
     const isLite = liteModeManager.isLiteEnabled;
     const shouldDisableAutoplay = isLite && liteConfig.disableAutoPlayVideos;
+
+    if (post.type !== 'video' || isLocked) return;
 
     if (shouldDisableAutoplay) {
       if (videoRef.current) {
@@ -167,12 +171,11 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; l
     );
     if (videoRef.current) observer.observe(videoRef.current);
     return () => observer.disconnect();
-  }, [liteConfig.disableAutoPlayVideos]);
+  }, [liteConfig.disableAutoPlayVideos, post.type, isLocked]);
 
   const isUserVerified = (isOwnPost && currentUser?.isFaciallyVerified) || (!isOwnPost && post.isVerified);
   
-  // Intercepting image requests using the liteBitmapOptions equivalent
-  const mediaUrl = post.media[0];
+  const mediaUrl = post.media?.[0] || '';
   const displayMediaUrl = post.type === 'image' 
     ? liteModeManager.getOptimizedImageUrl(mediaUrl) 
     : mediaUrl;
@@ -201,87 +204,132 @@ const PostCard: React.FC<{ post: Post; isOwnPost: boolean; currentUser?: User; l
             </div>
           </div>
         </div>
-        <div className="px-2 py-1 bg-zinc-900 rounded-lg border border-zinc-800">
-          <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest">
-            {post.type === 'video' ? '🎬 RIO' : '🖼️ POST'}
-          </span>
+        <div className="flex gap-2">
+          {post.exclusiveTierId && (
+            <div className="bg-purple-600/10 border border-purple-500/50 px-2 py-1 rounded-lg flex items-center gap-1">
+              <span className="text-[8px] font-black text-purple-400 uppercase tracking-widest">MEMBRO</span>
+              {isLocked ? <span className="text-[8px]">🔒</span> : <span className="text-[8px]">✨</span>}
+            </div>
+          )}
+          <div className={`px-2 py-1 rounded-lg border ${post.type === 'live' ? 'bg-red-600 border-red-500 animate-pulse' : 'bg-zinc-900 border-zinc-800'}`}>
+            <span className={`text-[8px] font-black uppercase tracking-widest ${post.type === 'live' ? 'text-white' : 'text-blue-500'}`}>
+              {post.type === 'video' ? '🎬 RIO' : post.type === 'live' ? '● AO VIVO' : '🖼️ POST'}
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="relative aspect-square bg-zinc-900 overflow-hidden shadow-2xl" onDoubleClick={handleDoubleClick}>
-        {post.type === 'video' ? (
-          <div className="relative w-full h-full cursor-pointer" onClick={toggleVideo}>
-            <video ref={videoRef} src={mediaUrl} className="w-full h-full object-cover" loop muted playsInline />
-            {/* Corrected getter access: isLiteEnabled is a getter, not a method */}
-            {(!isPlaying || (liteModeManager.isLiteEnabled && liteConfig.disableAutoPlayVideos)) && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                <Icons.Play className="w-12 h-12 text-white/50" />
-              </div>
-            )}
-            {/* Corrected getter access: isLiteEnabled is a getter, not a method */}
-            {liteModeManager.isLiteEnabled && liteConfig.disableAutoPlayVideos && !isPlaying && (
-              <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 rounded text-[7px] font-black uppercase text-white">
-                Autoplay Off (Lite)
-              </div>
-            )}
+        {isLocked ? (
+          <div className="absolute inset-0 bg-black flex flex-col items-center justify-center p-10 text-center gap-4">
+             <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center border border-zinc-800 shadow-xl">
+                <span className="text-4xl">💎</span>
+             </div>
+             <div className="space-y-2">
+                <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">Conteúdo Exclusivo</h3>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-relaxed">
+                   Este post é reservado para membros ativos do nível <span className="text-purple-400">Bronze</span> ou superior.
+                </p>
+             </div>
+             <button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-purple-600/20 active:scale-95 transition-all">
+                Seja Membro Agora
+             </button>
           </div>
         ) : (
-          <img 
-            src={displayMediaUrl} 
-            className="w-full h-full object-cover" 
-            loading="lazy"
-            style={{ 
-              imageRendering: liteImgOpts.renderingHint as any 
-            }}
-          />
+          <>
+            {post.type === 'video' ? (
+              <div className="relative w-full h-full cursor-pointer" onClick={toggleVideo}>
+                <video ref={videoRef} src={mediaUrl} className="w-full h-full object-cover" loop muted playsInline />
+                {(!isPlaying || (liteModeManager.isLiteEnabled && liteConfig.disableAutoPlayVideos)) && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <Icons.Play className="w-12 h-12 text-white/50" />
+                  </div>
+                )}
+              </div>
+            ) : post.type === 'live' ? (
+               <div className="relative w-full h-full bg-black flex items-center justify-center">
+                  <div className="absolute top-4 left-4 z-10 flex gap-2">
+                     <div className="bg-red-600 px-2 py-0.5 rounded text-[7px] font-black text-white uppercase tracking-widest">LIVE</div>
+                     <div className="bg-black/60 px-2 py-0.5 rounded text-[7px] font-black text-zinc-300 uppercase tracking-widest flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-zinc-400"></span> 1.2K
+                     </div>
+                  </div>
+                  <img src={post.userAvatar} className="w-32 h-32 rounded-full border-4 border-red-600 animate-pulse" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                  <div className="absolute bottom-6 left-6 right-6">
+                     <p className="text-white text-xs font-black uppercase tracking-widest mb-1 italic">Transmitindo agora...</p>
+                     <div className="flex gap-1">
+                        <div className="h-1 w-8 bg-red-600 rounded-full"></div>
+                        <div className="h-1 w-4 bg-red-600/30 rounded-full"></div>
+                     </div>
+                  </div>
+               </div>
+            ) : (
+              <img 
+                src={displayMediaUrl} 
+                className="w-full h-full object-cover" 
+                loading="lazy"
+                style={{ 
+                  imageRendering: liteImgOpts.renderingHint as any 
+                }}
+              />
+            )}
+          </>
         )}
-        {showHeart && (
+        
+        {showHeart && !isLocked && (
           <div className="absolute inset-0 flex items-center justify-center animate-in zoom-in-50 duration-300 pointer-events-none">
             <Icons.Heart filled className="w-20 h-20 text-white drop-shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
           </div>
         )}
       </div>
 
-      <div className="px-5 pt-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <button onClick={toggleLike} className={`transition-all ${liked ? 'text-red-500' : 'text-white'}`}><Icons.Heart filled={liked} className="w-7 h-7" /></button>
-            <button className="text-white"><Icons.Comment className="w-7 h-7" /></button>
-            <button className="text-white"><Icons.Share className="w-7 h-7" /></button>
+      {!isLocked && (
+        <div className="px-5 pt-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <button onClick={toggleLike} className={`transition-all ${liked ? 'text-red-500' : 'text-white'}`}><Icons.Heart filled={liked} className="w-7 h-7" /></button>
+              <button className="text-white"><Icons.Comment className="w-7 h-7" /></button>
+              <button className="text-white"><Icons.Share className="w-7 h-7" /></button>
+            </div>
+            <button className="text-white"><Icons.Bookmark className="w-7 h-7" /></button>
           </div>
-          <button className="text-white"><Icons.Bookmark className="w-7 h-7" /></button>
-        </div>
 
-        <div className="space-y-1">
-          <p className="text-sm font-black tracking-tight">{likesCount.toLocaleString()} Curtidas</p>
-          <p className="text-sm leading-relaxed">
-            <span className="font-black mr-2 tracking-tight">{isOwnPost && currentUser?.displayName ? currentUser.displayName : post.username}</span>
-            <span className="text-zinc-400">{post.content}</span>
-          </p>
-          
-          <div className="pt-4">
-            <button onClick={toggleInsights} className="text-[9px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica v5.9'}
-            </button>
-            {showInsights && post.scores && (
-              <div className="mt-3 p-6 bg-zinc-900 rounded-[2rem] border border-zinc-800 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                 <div className="grid grid-cols-2 gap-4">
-                    <InsightMetric label="Match Interesse" value={post.scores.breakdown.interest} color="bg-blue-500" />
-                    <InsightMetric label="Trending Score" value={post.scores.breakdown.trending} color="bg-orange-500" />
-                    <InsightMetric label="Recência (Vida)" value={post.scores.breakdown.recency} color="bg-green-500" />
-                    <InsightMetric label="Conexão Seguindo" value={post.scores.amigos} color="bg-purple-500" />
-                 </div>
+          <div className="space-y-1">
+            <p className="text-sm font-black tracking-tight">{likesCount.toLocaleString()} Curtidas</p>
+            <p className="text-sm leading-relaxed">
+              <span className="font-black mr-2 tracking-tight">{isOwnPost && currentUser?.displayName ? currentUser.displayName : post.username}</span>
+              <span className="text-zinc-400">{post.content}</span>
+            </p>
 
-                 <div className="pt-3 border-t border-zinc-800 flex justify-between items-center">
-                    <span className="text-[9px] font-black uppercase text-white">Score Combinado</span>
-                    <span className="text-xs font-black text-blue-500">{(post.scores.final * 10).toFixed(1)} Pts</span>
-                 </div>
+            {post.musicAttribution && (
+              <div className="flex items-center gap-2 py-2 mt-2 border-t border-zinc-900/50">
+                 <span className="text-xs">🎵</span>
+                 <p className="text-[10px] font-black uppercase text-blue-500 tracking-tighter">
+                   Música: {post.musicAttribution} (YouTube Audio Library)
+                 </p>
               </div>
             )}
+            
+            <div className="pt-2">
+              <button onClick={toggleInsights} className="text-[9px] font-black uppercase tracking-widest text-zinc-600 hover:text-blue-500 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-700"></span>
+                {showInsights ? 'Esconder Transparência' : 'Auditoria Algorítmica'}
+              </button>
+              {showInsights && post.scores && (
+                <div className="mt-3 p-6 bg-zinc-900 rounded-[2rem] border border-zinc-800 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                   <div className="grid grid-cols-2 gap-4">
+                      <InsightMetric label="Match Interesse" value={post.scores.breakdown.interest} color="bg-blue-500" />
+                      <InsightMetric label="Trending Score" value={post.scores.breakdown.trending} color="bg-orange-500" />
+                      <InsightMetric label="Recência" value={post.scores.breakdown.recency} color="bg-green-500" />
+                      <InsightMetric label="Conexão Seguindo" value={post.scores.amigos} color="bg-purple-500" />
+                   </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </article>
   );
 };

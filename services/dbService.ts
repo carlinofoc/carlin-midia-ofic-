@@ -88,6 +88,11 @@ export const dbService = {
       avatar: `https://picsum.photos/seed/${nome}/200/200`,
       followers: 0,
       following: 0,
+      // Added missing properties viewsLastYear and monetizationEnrolled
+      viewsLastYear: 0,
+      // Added missing required property
+      averageViewsPerVideo: 0,
+      monetizationEnrolled: false,
       email: email, // UserAccount.kt
       interests: [],
       viewedContent: [],
