@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig, LiteMode, SubscriptionStatus } from './types';
-import { Icons } from './constants';
+import { Icons, BrandLogo } from './constants';
 import Feed from './components/Feed';
 import Profile from './components/Profile';
 import CreatePost from './components/CreatePost';
@@ -301,11 +301,8 @@ const App: React.FC = () => {
       
       {isAuthenticated && (
         <nav className={`hidden lg:flex flex-col w-72 border-r ${darkMode ? 'border-zinc-900 bg-black' : 'border-zinc-200 bg-white'} p-8 sticky top-0 h-screen gap-4`}>
-          <div className="py-4 px-4 mb-6 flex items-center gap-3">
-             <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center overflow-hidden shadow-lg">
-                <img src={currentUser?.avatar || 'assets/profile.png'} className="w-full h-full object-cover" />
-             </div>
-             <h1 className="text-xl font-black italic tracking-tighter text-blue-500 uppercase">CARLIN</h1>
+          <div className="py-4 px-4 mb-10">
+             <BrandLogo size="md" lightText={darkMode} />
           </div>
           <NavButton icon={<Icons.Home className="w-6 h-6" />} label="Feed" active={currentView === 'feed'} onClick={() => setCurrentView('feed')} darkMode={darkMode} />
           <NavButton icon={<Icons.Search className="w-6 h-6" />} label="Pesquisar" active={currentView === 'explore'} onClick={() => setCurrentView('explore')} darkMode={darkMode} />
@@ -342,7 +339,7 @@ const App: React.FC = () => {
 };
 
 const NavButton = ({ icon, label, active, onClick, darkMode }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void, darkMode: boolean }) => (
-  <button onClick={onClick} className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${active ? (darkMode ? 'bg-blue-600/10 text-blue-500' : 'bg-blue-50 text-blue-600') : 'text-zinc-50'}`}>
+  <button onClick={onClick} className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${active ? (darkMode ? 'bg-blue-600/10 text-blue-500' : 'bg-blue-50 text-blue-600') : 'text-zinc-400'}`}>
     <div className={active ? 'scale-110' : ''}>{icon}</div>
     <span className={`text-[10px] tracking-widest font-black uppercase`}>{label}</span>
   </button>

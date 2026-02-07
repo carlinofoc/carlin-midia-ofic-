@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, ProfileLink, VerificationLevel } from '../types';
-import { Icons } from '../constants';
+import { Icons, BrandLogo } from '../constants';
 import EditProfilePhoto from './EditProfilePhoto';
 import EditBio from './EditBio';
 import EditLinks from './EditLinks';
@@ -87,14 +87,14 @@ const Profile: React.FC<ProfileProps> = ({
 
   return (
     <div className={`w-full max-w-2xl mx-auto pt-14 lg:pt-8 ${containerClasses} min-h-screen transition-colors pb-32`}>
-      <div className="flex items-center justify-between px-5 py-4">
-        <h1 className="text-lg font-black uppercase tracking-widest text-blue-500 italic">CARLIN</h1>
-        <button onClick={onOpenAdvancedSettings} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:scale-110 transition-all">
-          <Icons.Settings className="w-6 h-6 text-white" />
+      <div className="flex items-center justify-between px-5 py-6">
+        <BrandLogo size="sm" lightText={isDark} />
+        <button onClick={onOpenAdvancedSettings} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:scale-110 transition-all shadow-lg active:scale-95">
+          <Icons.Settings className="w-5 h-5 text-white" />
         </button>
       </div>
 
-      <div className="px-5 py-6 space-y-6">
+      <div className="px-5 py-4 space-y-6">
         <div className="flex items-center justify-between gap-6">
           <div className="relative group cursor-pointer" onClick={() => setShowEditPhoto(true)}>
             <div className={`w-24 h-24 md:w-32 md:h-32 rounded-full p-[3px] transition-all ${user.verificationLevel === VerificationLevel.OURO ? 'bg-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]' : isLite ? 'bg-zinc-800' : 'bg-gradient-to-tr from-blue-600 to-blue-400'}`}>
@@ -121,12 +121,12 @@ const Profile: React.FC<ProfileProps> = ({
             <h2 className="font-black text-lg">{user.displayName}</h2>
             {getTierBadge(user.verificationLevel)}
           </div>
-          <p className="text-xs text-blue-500 font-bold uppercase tracking-widest flex items-center gap-2">
+          <p className="text-xs text-orange-500 font-bold uppercase tracking-widest flex items-center gap-2 leading-none">
             @{user.username}
-            {isLite && <span className="bg-blue-500/20 text-blue-500 text-[8px] px-1.5 py-0.5 rounded font-black">LITE</span>}
+            {isLite && <span className="bg-orange-500/20 text-orange-500 text-[8px] px-1.5 py-0.5 rounded font-black">LITE</span>}
           </p>
 
-          <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'} leading-relaxed mt-1 whitespace-pre-wrap cursor-pointer`} onClick={() => setShowEditBio(true)}>
+          <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'} leading-relaxed mt-3 whitespace-pre-wrap cursor-pointer`} onClick={() => setShowEditBio(true)}>
             {user.bio || "Toque aqui para adicionar sua biografia."}
           </p>
         </div>
@@ -136,25 +136,25 @@ const Profile: React.FC<ProfileProps> = ({
             <span className="text-xl">📊</span>
             <span className="text-[8px] font-black uppercase tracking-widest">Métricas Reais</span>
           </button>
-          <button onClick={onOpenImpactSocial} className="bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all">
+          <button onClick={onOpenImpactSocial} className="bg-orange-600/10 border border-orange-500/30 text-orange-500 py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all">
             <span className="text-xl">🌍</span>
-            <span className="text-[8px] font-black uppercase tracking-widest">Impacto Social</span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-orange-400">Impacto Social</span>
           </button>
         </div>
 
         <button 
           onClick={onOpenSupport}
-          className="w-full bg-blue-600/10 border border-blue-500/20 py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+          className="w-full bg-gradient-to-r from-blue-600/20 to-orange-500/20 border border-white/10 py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-inner"
         >
           <span className="text-xl">👨‍💻</span>
           <div className="text-left">
-            <h4 className="text-[10px] font-black uppercase text-blue-500 tracking-tighter leading-none">Apoie o Desenvolvedor</h4>
+            <h4 className="text-[10px] font-black uppercase text-white tracking-widest leading-none">Apoie o Desenvolvedor</h4>
             <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Garantindo a soberania do Carlin</p>
           </div>
         </button>
 
         {!user.isFaciallyVerified && (
-           <div className="p-6 bg-blue-600 rounded-[2rem] shadow-xl shadow-blue-600/20 animate-pulse cursor-pointer" onClick={onOpenVerification}>
+           <div className="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[2rem] shadow-xl shadow-blue-600/20 animate-pulse cursor-pointer" onClick={onOpenVerification}>
               <div className="flex items-center justify-between">
                  <div className="space-y-1">
                     <h4 className="text-xs font-black uppercase text-white tracking-tighter italic">Eleve seu Perfil</h4>
@@ -168,7 +168,7 @@ const Profile: React.FC<ProfileProps> = ({
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-center px-1">
              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Vínculos Ativos</h3>
-             <button onClick={() => setShowEditLinks(true)} className="text-[8px] font-black text-blue-500 uppercase tracking-widest hover:underline">Editar</button>
+             <button onClick={() => setShowEditLinks(true)} className="text-[8px] font-black text-orange-500 uppercase tracking-widest hover:underline">Editar</button>
           </div>
           <div className="space-y-3">
             {activeLinks.length > 0 ? activeLinks.map((link) => (
@@ -179,8 +179,8 @@ const Profile: React.FC<ProfileProps> = ({
       </div>
 
       <div className={`flex border-t ${borderClasses} mt-4`}>
-        <button onClick={() => setTab('posts')} className={`flex-1 flex justify-center py-4 ${tab === 'posts' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-blue-600 text-blue-600'}` : 'text-zinc-400'}`}><Icons.Home className="w-6 h-6" /></button>
-        <button onClick={() => setTab('saved')} className={`flex-1 flex justify-center py-4 ${tab === 'saved' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-blue-600 text-blue-600'}` : 'text-zinc-400'}`}><Icons.Bookmark className="w-6 h-6" /></button>
+        <button onClick={() => setTab('posts')} className={`flex-1 flex justify-center py-4 ${tab === 'posts' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-orange-500 text-orange-500'}` : 'text-zinc-500'}`}><Icons.Home className="w-6 h-6" /></button>
+        <button onClick={() => setTab('saved')} className={`flex-1 flex justify-center py-4 ${tab === 'saved' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-orange-500 text-orange-500'}` : 'text-zinc-500'}`}><Icons.Bookmark className="w-6 h-6" /></button>
       </div>
 
       <div className="grid grid-cols-3 gap-0.5">

@@ -67,8 +67,67 @@ export const Icons = {
 };
 
 /**
- * Replicates Kotlin: object ImpactMessage
+ * Replicates the brand identity provided in the image.
  */
+export const BrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg', showText?: boolean, lightText?: boolean }> = ({ 
+  size = 'md', 
+  showText = true,
+  lightText = true
+}) => {
+  const iconSizes = {
+    sm: 'h-8',
+    md: 'h-12',
+    lg: 'h-24'
+  };
+  
+  const textSizes = {
+    sm: 'text-lg',
+    md: 'text-2xl',
+    lg: 'text-5xl'
+  };
+
+  const subTextSizes = {
+    sm: 'text-[6px]',
+    md: 'text-[9px]',
+    lg: 'text-[14px]'
+  };
+
+  return (
+    <div className="flex items-center gap-3 select-none">
+      <div className={`${iconSizes[size]} aspect-square relative`}>
+        {/* Colorful Gradient Speech Bubble Icon from the Logo */}
+        <div className="w-full h-full bg-gradient-to-br from-cyan-400 via-purple-600 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-[-5deg]">
+           <div className="w-2/3 h-2/3 flex items-center justify-center relative">
+              <div className="w-3 h-3 rounded-full bg-cyan-300 absolute top-0 left-0 shadow-inner"></div>
+              <div className="w-3 h-3 rounded-full bg-blue-400 absolute bottom-0 left-1/4"></div>
+              <div className="w-3 h-3 rounded-full bg-orange-400 absolute bottom-2 right-0"></div>
+              <svg viewBox="0 0 24 24" className="w-full h-full text-white/20 absolute inset-0" fill="currentColor">
+                <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" />
+              </svg>
+           </div>
+           {/* Speech bubble tail */}
+           <div className="absolute -bottom-2 -left-1 w-4 h-4 bg-purple-700 transform rotate-45 rounded-sm"></div>
+        </div>
+      </div>
+      
+      {showText && (
+        <div className="flex flex-col justify-center">
+          <h1 className={`${textSizes[size]} font-black tracking-tighter uppercase leading-none italic ${lightText ? 'text-white' : 'text-zinc-900'}`}>
+            CARLIN
+          </h1>
+          <div className="flex items-center gap-1.5 mt-0.5">
+             <div className={`h-[1px] flex-1 ${lightText ? 'bg-orange-500/50' : 'bg-orange-600/30'}`}></div>
+             <span className={`${subTextSizes[size]} font-black uppercase tracking-[0.2em] whitespace-nowrap ${lightText ? 'text-zinc-300' : 'text-zinc-600'}`}>
+               MIDIA OFIC LTDA
+             </span>
+             <div className={`h-[1px] flex-1 ${lightText ? 'bg-orange-500/50' : 'bg-orange-600/30'}`}></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ImpactMessage = {
   USER_MESSAGE: `
         Este aplicativo acredita que tecnologia também é responsabilidade social.
@@ -77,9 +136,6 @@ export const ImpactMessage = {
     `
 };
 
-/**
- * Replicates strings.xml: Support strings
- */
 export const SupportMessages = {
   TITLE: "Apoie o desenvolvimento do aplicativo",
   DESCRIPTION: "Este aplicativo está sendo desenvolvido de forma independente. Para mantê-lo funcionando, atualizado, seguro e acessível, criamos um apoio opcional no valor de R$ 9,90.",
