@@ -66,6 +66,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onBack, onUpdateUser }) => 
     setIsProcessingPayout(false);
   };
 
+  /**
+   * Generates the "██████████░░░░░░░░░░" style progress bar string
+   */
+  const getBlockProgressBar = (percentage: number) => {
+    const totalBlocks = 20;
+    const filledBlocks = Math.round((percentage / 100) * totalBlocks);
+    const emptyBlocks = totalBlocks - filledBlocks;
+    return "█".repeat(filledBlocks) + "░".repeat(emptyBlocks);
+  };
+
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-8 animate-in fade-in duration-500 overflow-y-auto pb-32">
       <div className="max-w-2xl mx-auto space-y-10">
@@ -77,7 +87,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onBack, onUpdateUser }) => 
           </button>
           <div className="text-right">
             <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none text-blue-500">Analytics Pro</h1>
-            <span className="text-[7px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-1">Sincronização Engine v9.5</span>
+            <span className="text-[7px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-1">Sincronização Engine v10.0</span>
           </div>
         </div>
 
@@ -102,14 +112,30 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onBack, onUpdateUser }) => 
             </div>
 
             <div className="space-y-4 pt-4 border-t border-zinc-800 relative z-10">
-               <div className="flex justify-between items-end">
-                  <div className="space-y-1 pr-10">
-                     <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-tight">
-                        Meta: <span className="text-white">{snapshot.next_goal}</span>
-                     </p>
+               {/* Custom Requirement Progress Display requested by user */}
+               <div className="bg-black/40 p-6 rounded-[2rem] border border-zinc-800 space-y-4 shadow-inner">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                       <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-tight">Progresso da Meta</p>
+                       <p className="text-xs font-black text-white uppercase italic tracking-tighter">{snapshot.next_goal}</p>
+                    </div>
+                    <div className="text-right">
+                       <span className="text-lg font-black italic text-blue-500">{snapshot.progress_percentage}%</span>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-black text-blue-500 italic">{snapshot.progress_percentage}%</span>
+                  
+                  {/* Block style progress bar requested: ██████████░░░░░░░░░░ 62% */}
+                  <div className="font-mono text-sm tracking-widest text-blue-500 overflow-hidden whitespace-nowrap bg-zinc-900/50 p-2 rounded-lg border border-zinc-800/50 text-center">
+                    {getBlockProgressBar(snapshot.progress_percentage)} <span className="text-white ml-2">{Math.floor(snapshot.progress_percentage)}%</span>
+                  </div>
+
+                  {snapshot.remaining_to_goal > 0 && (
+                    <p className="text-center text-[10px] font-black uppercase text-zinc-400 tracking-widest animate-pulse">
+                      Faltam <span className="text-white">{snapshot.remaining_to_goal.toLocaleString()} {snapshot.goal_unit}</span> para monetizar
+                    </p>
+                  )}
                </div>
+
                <div className="w-full h-2.5 bg-black rounded-full overflow-hidden border border-zinc-800 p-0.5 shadow-inner">
                   <div 
                     className="h-full bg-blue-600 transition-all duration-1000 ease-out rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)]" 
@@ -133,7 +159,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onBack, onUpdateUser }) => 
         {activeTab === 'stats' && (
           <div className="space-y-10 animate-in slide-in-from-left-4">
             <div className={`p-8 rounded-[2.5rem] border border-white/10 bg-zinc-900/40 space-y-6 relative overflow-hidden shadow-2xl`}>
-               <h3 className="text-xs font-black uppercase text-blue-400 tracking-widest relative z-10">Status do Algoritmo</h3>
+               <div className="flex justify-between items-center relative z-10">
+                  <h3 className="text-xs font-black uppercase text-blue-400 tracking-widest">Status do Algoritmo</h3>
+                  <div className={`px-3 py-1 rounded-lg border text-[8px] font-black uppercase tracking-widest ${
+                    snapshot.engagement_status === 'VALID' ? 'bg-green-600/10 border-green-500/30 text-green-400' :
+                    snapshot.engagement_status === 'PARTIAL' ? 'bg-amber-600/10 border-amber-500/30 text-amber-400' :
+                    'bg-red-600/10 border-red-500/30 text-red-500'
+                  }`}>
+                    {snapshot.engagement_status}
+                  </div>
+               </div>
                <div className="grid grid-cols-2 gap-8 relative z-10">
                   <div>
                      <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Nível de Monetização</p>
@@ -143,6 +178,23 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onBack, onUpdateUser }) => 
                      <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Eficiência de Engajamento</p>
                      <p className="text-2xl font-black italic tracking-tighter text-white">{projection?.scalingEfficiency}%</p>
                   </div>
+               </div>
+               
+               {/* TRUST SCORE INTEGRATION BASED ON PYTHON SNIPPET */}
+               <div className="pt-6 border-t border-zinc-800/50 relative z-10">
+                  <div className="flex justify-between items-center mb-2">
+                     <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">Fator de Confiança (Trust Score)</p>
+                     <span className={`text-[10px] font-black italic ${snapshot.trust_score >= 0.8 ? 'text-green-400' : snapshot.trust_score >= 0.5 ? 'text-amber-400' : 'text-red-500'}`}>
+                        {(snapshot.trust_score * 100).toFixed(0)}%
+                     </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-black rounded-full overflow-hidden border border-zinc-800 p-0.5">
+                     <div 
+                        className={`h-full transition-all duration-1000 ease-out rounded-full ${snapshot.trust_score >= 0.8 ? 'bg-green-500' : snapshot.trust_score >= 0.5 ? 'bg-amber-500' : 'bg-red-500'}`}
+                        style={{ width: `${snapshot.trust_score * 100}%` }}
+                     ></div>
+                  </div>
+                  <p className="text-[7px] text-zinc-600 mt-2 uppercase font-bold tracking-widest">Auditoria Guardian v10: Análise de padrões de engajamento ativa.</p>
                </div>
             </div>
             

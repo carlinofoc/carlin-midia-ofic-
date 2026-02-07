@@ -28,7 +28,11 @@ export interface CreatorDashboardSnapshot {
   monetization_level: MonetizationLevel;
   estimated_revenue: number;
   next_goal: string;
+  remaining_to_goal: number;
+  goal_unit: string;
   progress_percentage: number;
+  trust_score: number;
+  engagement_status: 'VALID' | 'PARTIAL' | 'INVALID';
   last_update: string;
   disclaimer?: string;
 }

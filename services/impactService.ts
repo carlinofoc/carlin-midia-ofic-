@@ -2,7 +2,7 @@ import { User, ImpactResult, SocialDonation, Post, MonetizationResult, CreatorTi
 import { impactRepository } from './impactRepository';
 
 /**
- * Carlin Impact Engine v9.9 - JSON Schema Alignment
+ * Carlin Impact Engine v10.0.1 - Engagement Validation Integration
  */
 
 const VALOR_BASE_SPOT = 0.50; 
@@ -26,6 +26,16 @@ export const GROWTH_SIM_DEFAULTS = {
   cpmmedio: 8.50,
   livesPorMes: 20
 };
+
+export interface ViewPattern {
+  isSpike: boolean;
+}
+
+export interface EngagementPattern {
+  tooConcentrated: boolean;
+  repeatedAccounts: boolean;
+  lowRetention: boolean;
+}
 
 export interface CreatorGrowthProjection {
   currentStatus: string;
@@ -146,10 +156,62 @@ export const impactService = {
   },
 
   /**
+   * REPLICATED FROM PYTHON: def calculate_total_views(videos_views, live_views)
+   */
+  calculateTotalViews(videosViews: number, liveViews: number): number {
+    return videosViews + liveViews;
+  },
+
+  /**
    * REPLICATED FROM PYTHON: def calculate_creator_revenue(platform_revenue, creator_share_percentage)
    */
   calculateCreatorRevenue(platformRevenue: number, creatorSharePercentage: number): number {
     return (platformRevenue * creatorSharePercentage) / 100;
+  },
+
+  /**
+   * REPLICATED FROM PYTHON: def apply_engagement_bonus(base_revenue, bonus)
+   */
+  applyEngagementBonus(baseRevenue: number, bonus: number): number {
+    return baseRevenue * (1 + bonus);
+  },
+
+  /**
+   * REPLICATED FROM PYTHON: def calculate_trust_score(view_pattern, engagement_pattern)
+   */
+  calculateTrustScore(viewPattern: ViewPattern, engagementPattern: EngagementPattern): number {
+    let score = 1.0;
+
+    if (viewPattern.isSpike) {
+      score -= 0.3;
+    }
+
+    if (engagementPattern.tooConcentrated) {
+      score -= 0.2;
+    }
+
+    if (engagementPattern.repeatedAccounts) {
+      score -= 0.3;
+    }
+
+    if (engagementPattern.lowRetention) {
+      score -= 0.2;
+    }
+
+    return Math.max(score, 0);
+  },
+
+  /**
+   * REPLICATED FROM PYTHON: def validate_engagement(trust_score)
+   */
+  validateEngagement(trustScore: number): 'VALID' | 'PARTIAL' | 'INVALID' {
+    if (trustScore >= 0.7) {
+      return "VALID";
+    } else if (trustScore >= 0.4) {
+      return "PARTIAL";
+    } else {
+      return "INVALID";
+    }
   },
 
   /**
@@ -162,28 +224,53 @@ export const impactService = {
 
     let nextGoal = "";
     let progress = 0;
+    let remaining = 0;
+    let goalUnit = "";
 
     if (followers < 1000) {
       nextGoal = "Alcançar 1.000 seguidores";
       progress = (followers / 1000) * 100;
+      remaining = 1000 - followers;
+      goalUnit = "seguidores";
     } else if (totalViews < 100000) {
       nextGoal = "Alcançar 100.000 visualizações";
       progress = (totalViews / 100000) * 100;
+      remaining = 100000 - totalViews;
+      goalUnit = "visualizações";
     } else if (totalViews < 300000) {
       nextGoal = "Alcançar 300.000 visualizações";
       progress = (totalViews / 300000) * 100;
+      remaining = 300000 - totalViews;
+      goalUnit = "visualizações";
     } else if (totalViews < 500000) {
       nextGoal = "Alcançar 500.000 visualizações em até 12 meses";
       progress = (totalViews / 500000) * 100;
+      remaining = 500000 - totalViews;
+      goalUnit = "visualizações";
     } else {
       nextGoal = "Monetização total alcançada 🎉";
       progress = 100;
+      remaining = 0;
+      goalUnit = "";
     }
 
     let estimatedRevenue = 0;
     if (["PARTIAL_MONETIZATION", "ADVANCED_PARTIAL_MONETIZATION", "FULL_MONETIZATION"].includes(level)) {
-      estimatedRevenue = this.calculateCreatorRevenue(platformRevenue, creatorShare);
+      const baseRevenue = this.calculateCreatorRevenue(platformRevenue, creatorShare);
+      const bonus = this.calculateEngagementBonus(user.points || 0);
+      estimatedRevenue = this.applyEngagementBonus(baseRevenue, bonus);
     }
+
+    // Trust Scoring Simulation based on account history
+    const simulatedViewPattern: ViewPattern = { isSpike: followers < 100 && totalViews > 50000 };
+    const simulatedEngPattern: EngagementPattern = { 
+      tooConcentrated: false, 
+      repeatedAccounts: user.points ? user.points > 8000 : false, 
+      lowRetention: false 
+    };
+
+    const trustScore = this.calculateTrustScore(simulatedViewPattern, simulatedEngPattern);
+    const engagementStatus = this.validateEngagement(trustScore);
 
     return {
       creator_id: user.id,
@@ -193,7 +280,11 @@ export const impactService = {
       monetization_level: level,
       estimated_revenue: parseFloat(estimatedRevenue.toFixed(2)),
       next_goal: nextGoal,
+      remaining_to_goal: remaining,
+      goal_unit: goalUnit,
       progress_percentage: parseFloat(progress.toFixed(2)),
+      trust_score: trustScore,
+      engagement_status: engagementStatus,
       last_update: new Date().toISOString()
     };
   },
@@ -206,7 +297,9 @@ export const impactService = {
 
     let estimatedRevenue = 0;
     if (["PARTIAL_MONETIZATION", "ADVANCED_PARTIAL_MONETIZATION", "FULL_MONETIZATION"].includes(level)) {
-      estimatedRevenue = this.calculateCreatorRevenue(platformRevenue, creatorShare);
+      const baseRevenue = this.calculateCreatorRevenue(platformRevenue, creatorShare);
+      const bonus = this.calculateEngagementBonus(user.points || 0);
+      estimatedRevenue = this.applyEngagementBonus(baseRevenue, bonus);
     }
 
     const now = new Date();
@@ -478,17 +571,45 @@ export const impactService = {
     };
   },
 
+  /**
+   * REPLICATED FROM PYTHON: def calculate_engagement_bonus(points: int) -> float
+   */
+  calculateEngagementBonus(points: number): number {
+    let bonusPercentage = Math.floor(points / 300);
+    if (bonusPercentage > 30) {
+      bonusPercentage = 30;
+    }
+    return bonusPercentage / 100; // retorna 0.01 até 0.30
+  },
+
+  /**
+   * Replicates Scale: 300 points = +1% boost. Max 30%.
+   */
   async donatePointsToLive(user: User, post: Post, points: number) {
     await new Promise(resolve => setTimeout(resolve, 800));
-    const appliedBoost = Math.floor(points / 300);
-    const newBoost = Math.min(MAX_LIVE_BOOST_PERCENT, (post.liveEngagementBoost || 0) + appliedBoost);
+    
+    const currentBoost = post.liveEngagementBoost || 0;
+    const requestedBoost = Math.floor(points / 300);
+    
+    // Calculate how much room is left for the boost
+    const roomLeft = MAX_LIVE_BOOST_PERCENT - currentBoost;
+    
+    if (roomLeft <= 0) {
+      return { status: "CAPPED", message: "Limite de impulso de 30% já atingido para esta live." };
+    }
+    
+    const actualBoostApplied = Math.min(requestedBoost, roomLeft);
+    const actualPointsConsumed = actualBoostApplied * 300;
+    const newBoost = currentBoost + actualBoostApplied;
+    
     return {
       status: "SUCCESS",
-      boostApplied: `${appliedBoost}%`,
+      boostApplied: `${actualBoostApplied}%`,
       currentBoost: `${newBoost}%`,
-      _newBalance: (user.points || 0) - points,
+      pointsConsumed: actualPointsConsumed,
+      _newBalance: (user.points || 0) - actualPointsConsumed,
       _newBoost: newBoost,
-      acceleratedViews: appliedBoost * 150,
+      acceleratedViews: actualBoostApplied * 150,
       message: "Sucesso"
     };
   },
@@ -534,11 +655,24 @@ export const impactService = {
     return { valorFinal: amount - taxa, taxa };
   },
 
+  /**
+   * REPLICATED FROM PYTHON: Synchronized with engagement_bonus logic
+   */
   calculateMonetization(post: Post, user: User): MonetizationResult {
     const features = this.getUnlockedFeatures(user);
     if (user.isMonetizationSuspended || !features.canEnrolAds) return { aprovado: false, totalGanho: 0 };
-    const total = 1.0 * ((post.views || 0) / 10000);
-    return { aprovado: true, totalGanho: parseFloat(total.toFixed(2)) };
+    
+    // Base revenue calculation
+    const baseTotal = 1.0 * ((post.views || 0) / 10000);
+    
+    // Apply Engagement Bonus Logic from Python Snippet
+    const engagementBonus = this.calculateEngagementBonus(user.points || 0);
+    const finalRevenue = this.applyEngagementBonus(baseTotal, engagementBonus);
+    
+    return { 
+      aprovado: true, 
+      totalGanho: parseFloat(finalRevenue.toFixed(2)) 
+    };
   },
 
   calculateUserImpact(user: User): ImpactResult {

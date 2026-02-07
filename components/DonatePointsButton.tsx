@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { LivePointsStatus } from '../services/impactService';
 
@@ -17,22 +16,7 @@ const DonatePointsButton: React.FC<DonatePointsButtonProps> = ({ status, isDonat
   const handleClick = async () => {
     if (!canDonate) return;
     
-    await onDonate();
-    
-    // Trigger Explosion Feedback
-    const newParticles = Array.from({ length: 12 }).map((_, i) => ({
-      id: Date.now() + i,
-      x: (Math.random() - 0.5) * 100,
-      y: (Math.random() - 0.5) * 100,
-    }));
-    
-    setParticles(newParticles);
-    setShowFeedback(true);
-    
-    setTimeout(() => {
-      setShowFeedback(false);
-      setParticles([]);
-    }, 2000);
+    await onDonate(); // This now opens the picker in LiveSession
   };
 
   return (
@@ -40,7 +24,7 @@ const DonatePointsButton: React.FC<DonatePointsButtonProps> = ({ status, isDonat
       {/* Feedback Message Overlay */}
       {showFeedback && (
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-purple-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full animate-bounce shadow-lg shadow-purple-500/40 z-20">
-          +1% Engajamento aplicado!
+          Impulso Sincronizado!
         </div>
       )}
 
@@ -87,7 +71,7 @@ const DonatePointsButton: React.FC<DonatePointsButtonProps> = ({ status, isDonat
         )}
 
         <span>
-          {canDonate ? 'Doar 300 Pontos' : 'Pontos indisponíveis'}
+          {canDonate ? 'Impulsionar' : 'Indisponível'}
         </span>
 
         {/* Status Hint */}

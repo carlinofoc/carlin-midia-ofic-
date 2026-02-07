@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Post, User } from '../types';
 import { Icons } from '../constants';
-import { impactService, LIVE_POINTS_CYCLE_SECONDS, LIVE_POINTS_PER_CYCLE, LivePointsStatus, LiveStatusResponse, MIN_POINTS_FOR_DONATION, MAX_LIVE_BOOST_PERCENT, AdsDistributionImpact, GROWTH_SIM_DEFAULTS } from '../services/impactService';
+import { impactService, LIVE_POINTS_CYCLE_SECONDS, LIVE_POINTS_PER_CYCLE, LivePointsStatus, LiveStatusResponse, MIN_POINTS_FOR_DONATION, MAX_LIVE_BOOST_PERCENT, MAX_LIVE_POINTS_LIMIT, AdsDistributionImpact, GROWTH_SIM_DEFAULTS } from '../services/impactService';
 import { simulateAIResponse } from '../services/geminiService';
 import LivePointsFAQ from './LivePointsFAQ';
 import DonatePointsButton from './DonatePointsButton';
@@ -28,6 +27,8 @@ const LiveSession: React.FC<LiveSessionProps> = ({ post: initialPost, user, onUp
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [fraudReason, setFraudReason] = useState<string | null>(null);
   const [showFAQ, setShowFAQ] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedPoints, setSelectedPoints] = useState(300);
   const [isSyncing, setIsSyncing] = useState(false);
   const [shouldPulseDonate, setShouldPulseDonate] = useState(false);
 
@@ -145,20 +146,19 @@ const LiveSession: React.FC<LiveSessionProps> = ({ post: initialPost, user, onUp
     }, ...prev]);
   };
 
-  const handleDonate = async () => {
+  const handleDonate = async (amount: number = 300) => {
     if (isDonating) return;
     setIsDonating(true);
     setShouldPulseDonate(false);
+    setShowPicker(false);
     
-    const pointsToDonate = MIN_POINTS_FOR_DONATION;
-
     setMessages(prev => [{
       id: Date.now() + 1001,
       system: true,
-      text: `Sync: POST /api/v1/live/points/donate...`
+      text: `Sync: POST /api/v1/live/points/donate/${amount}...`
     }, ...prev]);
 
-    const result = await impactService.donatePointsToLive(user, post, pointsToDonate);
+    const result = await impactService.donatePointsToLive(user, post, amount);
     
     if (result.status === "SUCCESS") {
       const updatedUser = { 
@@ -204,14 +204,29 @@ const LiveSession: React.FC<LiveSessionProps> = ({ post: initialPost, user, onUp
     }
   };
 
+  const getBlockProgressBar = (percentage: number) => {
+    const totalBlocks = 20;
+    const filledBlocks = Math.round((percentage / 100) * totalBlocks);
+    const emptyBlocks = totalBlocks - filledBlocks;
+    return "█".repeat(filledBlocks) + "░".repeat(emptyBlocks);
+  };
+
   const progressPercent = (seconds / LIVE_POINTS_CYCLE_SECONDS) * 100;
   
   const currentBoostVal = post.liveEngagementBoost || 0;
+  const currentPointsInvested = currentBoostVal * 300;
   const boostPercentOfCap = (currentBoostVal / MAX_LIVE_BOOST_PERCENT) * 100;
   
   let boostColorClass = "bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)]";
-  if (currentBoostVal >= 20) boostColorClass = "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)]";
-  else if (currentBoostVal >= 10) boostColorClass = "bg-purple-600 shadow-[0_0_12px_rgba(147,51,234,0.6)]";
+  let blockColorClass = "text-blue-500";
+
+  if (currentBoostVal >= 20) {
+    boostColorClass = "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)]";
+    blockColorClass = "text-amber-400";
+  } else if (currentBoostVal >= 10) {
+    boostColorClass = "bg-purple-600 shadow-[0_0_12px_rgba(147,51,234,0.6)]";
+    blockColorClass = "text-purple-600";
+  }
 
   return (
     <div className="fixed inset-0 bg-black z-[1000] flex flex-col animate-in fade-in duration-500 overflow-hidden">
@@ -223,15 +238,72 @@ const LiveSession: React.FC<LiveSessionProps> = ({ post: initialPost, user, onUp
 
       {showFAQ && <LivePointsFAQ onClose={() => setShowFAQ(false)} />}
 
-      {/* BoostProgressBar */}
-      <div className="relative z-20 w-full px-6 pt-4 space-y-1.5 animate-in slide-in-from-top-2 duration-700">
-         <div className="flex justify-between items-center px-1">
-            <span className="text-[7px] font-black uppercase text-zinc-500 tracking-[0.2em]">Soberania Algorítmica</span>
-            <p className="text-[8px] font-black uppercase text-white tracking-widest">
-               Boost de Engajamento: <span className={currentBoostVal >= 20 ? 'text-amber-400' : currentBoostVal >= 10 ? 'text-purple-400' : 'text-blue-400'}>{currentBoostVal}%</span> / {MAX_LIVE_BOOST_PERCENT}%
-            </p>
+      {/* Points Picker Modal */}
+      {showPicker && (
+        <div className="fixed inset-0 bg-black/90 z-[2100] flex items-center justify-center p-6 backdrop-blur-md animate-in zoom-in-95 duration-300">
+           <div className="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-[3rem] p-8 space-y-8 shadow-3xl">
+              <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-black italic uppercase text-white">Escolher Impulso</h3>
+                 <button onClick={() => setShowPicker(false)} className="text-zinc-500 hover:text-white">
+                    <Icons.Plus className="w-6 h-6 rotate-45" />
+                 </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2 hide-scrollbar">
+                 {[300, 600, 900, 1500, 3000, 6000, 9000].map(p => {
+                    const boost = p / 300;
+                    const canAfford = (user.points || 0) >= p;
+                    const wouldExceed = (post.liveEngagementBoost || 0) + boost > MAX_LIVE_BOOST_PERCENT;
+                    const disabled = !canAfford || wouldExceed;
+                    
+                    return (
+                      <button 
+                        key={p}
+                        onClick={() => handleDonate(p)}
+                        disabled={disabled}
+                        className={`p-4 rounded-[1.5rem] border flex flex-col items-center gap-1 transition-all active:scale-95 ${
+                           disabled 
+                           ? 'bg-zinc-800/20 border-zinc-800 opacity-30 cursor-not-allowed' 
+                           : 'bg-zinc-900 border-zinc-800 hover:border-purple-500/50'
+                        }`}
+                      >
+                         <span className="text-lg font-black text-white">{p}</span>
+                         <span className="text-[8px] font-black uppercase text-purple-400">+{boost}% Boost</span>
+                         {!canAfford && <span className="text-[6px] font-bold text-red-500 uppercase mt-1">Saldo Baixo</span>}
+                         {wouldExceed && !canAfford && <span className="text-[6px] font-bold text-orange-500 uppercase mt-1">Excede 30%</span>}
+                      </button>
+                    );
+                 })}
+              </div>
+              <p className="text-[9px] text-zinc-500 text-center uppercase font-black tracking-widest italic">
+                Sua doação ajuda o criador a acelerar as metas de monetização.
+              </p>
+           </div>
+        </div>
+      )}
+
+      {/* BoostProgressBar Sincronizada com Requisito Visual */}
+      <div className="relative z-20 w-full px-6 pt-4 space-y-3 animate-in slide-in-from-top-2 duration-700">
+         <div className="flex justify-between items-end px-1">
+            <div className="space-y-0.5">
+               <span className="text-[7px] font-black uppercase text-zinc-500 tracking-[0.2em]">Boost de Engajamento</span>
+               <p className={`text-sm font-black italic uppercase tracking-tighter ${blockColorClass}`}>
+                  +{currentBoostVal}% de engajamento
+               </p>
+            </div>
+            <div className="text-right space-y-0.5">
+               <p className="text-[7px] font-black uppercase text-zinc-600 tracking-widest">Acumulado Live</p>
+               <p className="text-[10px] font-black text-white font-mono tracking-tighter">
+                  {currentPointsInvested.toLocaleString()} / {MAX_LIVE_POINTS_LIMIT.toLocaleString()} pontos
+               </p>
+            </div>
          </div>
-         <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/10 backdrop-blur-md">
+         
+         {/* Block style progress bar requested: ██████████░░░░░░░░░░ */}
+         <div className={`font-mono text-[10px] tracking-[0.3em] overflow-hidden whitespace-nowrap bg-black/40 p-2 rounded-xl border border-white/5 text-center transition-colors duration-500 ${blockColorClass}`}>
+            {getBlockProgressBar(boostPercentOfCap)}
+         </div>
+
+         <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/10 backdrop-blur-md hidden md:block">
             <div 
               className={`h-full transition-all duration-1000 ease-out rounded-full ${boostColorClass}`}
               style={{ width: `${boostPercentOfCap}%` }}
@@ -491,7 +563,7 @@ const LiveSession: React.FC<LiveSessionProps> = ({ post: initialPost, user, onUp
              <DonatePointsButton 
               status={apiStatus} 
               isDonating={isDonating} 
-              onDonate={handleDonate} 
+              onDonate={async () => setShowPicker(true)} 
              />
           </div>
         </div>
