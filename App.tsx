@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, Suspense } from 'react';
 import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig, LiteMode, SubscriptionStatus, VerificationLevel, WithdrawalRequest, PaymentMethod, WithdrawalStatus } from './types';
 import { Icons, BrandLogo } from './constants';
@@ -31,6 +32,7 @@ import ImpactSocialScreen from './components/ImpactSocialScreen';
 import SupportScreen from './components/SupportScreen';
 import MonetizationStatus from './components/MonetizationStatus';
 import MembershipManager from './components/MembershipManager';
+import AdminPanel from './components/AdminPanel';
 import { rankFeed } from './services/algorithmService';
 import { dbService } from './services/dbService';
 import { liteModeManager, networkLimiter } from './services/liteModeService';
@@ -105,15 +107,14 @@ const App: React.FC = () => {
     if (!identity) {
       setCurrentView('register');
     } else if (sessionActive) {
-      // Sync with GET /api/v1/creator/earnings requirements
       const mockedUser: User = { 
         ...identity!, 
         followers: 1240, 
         viewsLastYear: 612340,
         averageViewsPerVideo: 15400,
         monetizationEnrolled: true,
-        totalRevenue: 1820.50, // totalEarnings
-        availableBalance: 920.25, // availableForWithdraw
+        totalRevenue: 1820.50,
+        availableBalance: 920.25,
         displayName: 'Carlin', 
         username: 'carlin_ofic',
         membershipTiers: [
@@ -121,7 +122,6 @@ const App: React.FC = () => {
           { id: 't2', name: 'Prata', price: 10, benefits: ['Tutorial avançado'], subscriberCount: 15 }
         ],
         withdrawalHistory: [
-          // Fix: Corrected 'createdAt' to 'date' and updated status values to match type definition
           { id: 'h1', amount: 350, method: 'PIX' as PaymentMethod, status: 'PAID' as WithdrawalStatus, date: '12/04/2024' },
           { id: 'h2', amount: 200, method: 'PayPal' as PaymentMethod, status: 'PROCESSING' as WithdrawalStatus, date: '20/05/2024' }
         ],
@@ -206,7 +206,6 @@ const App: React.FC = () => {
     if (!isAuthenticated) {
         if (currentView === 'register') return <Registration onComplete={handleRegistrationComplete} onNavigateToLogin={() => setCurrentView('login')} />;
         return <Login onLogin={(u) => { 
-          // Sync with API requirements on login
           const mocked = { ...u, followers: 1240, viewsLastYear: 612340, averageViewsPerVideo: 15400, monetizationEnrolled: true, totalRevenue: 1820.50, availableBalance: 920.25, displayName: 'Carlin', username: 'carlin_ofic' };
           setCurrentUser(mocked as User); 
           setIsAuthenticated(true); 
@@ -247,6 +246,7 @@ const App: React.FC = () => {
         );
       case 'explore': return <Explore posts={feedItems as Post[]} />;
       case 'reels': return <Reels liteConfig={liteConfig} />;
+      case 'admin': return <AdminPanel currentUser={currentUser!} onUpdateUser={setCurrentUser} onBack={() => setCurrentView('profile')} />;
       case 'profile': return (
         <Profile 
           user={currentUser!} onOpenTerms={() => setCurrentView('terms')} onOpenPrivacy={() => setCurrentView('privacy')} 

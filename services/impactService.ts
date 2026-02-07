@@ -3,7 +3,7 @@ import { User, ImpactResult, SocialDonation, Post, MonetizationResult, CreatorTi
 import { impactRepository } from './impactRepository';
 
 /**
- * Carlin Impact Engine v3.9 - Admin & Suspension Controls
+ * Carlin Impact Engine v4.0 - Admin & Compliance Logic
  * Standards: 
  * - Memberships: 1,000 Followers
  * - Ads: 1,000 Followers AND 500,000 Annual Views
@@ -59,26 +59,33 @@ export const impactService = {
 
   /**
    * Simulates the admin endpoint: POST /api/v1/admin/creator/monetization/suspend
+   * Updates the user state in local simulation.
    */
-  async suspendMonetization(userId: string, reason: string): Promise<{ status: string; message: string }> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  async suspendMonetization(user: User, reason: string): Promise<{ status: string; message: string; updatedUser: User }> {
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // In a real app, this would update the backend DB.
-    // For this simulation, we assume success.
+    const updatedUser: User = {
+      ...user,
+      isMonetizationSuspended: true,
+      suspensionReason: reason
+    };
+
+    // Persist local change
+    localStorage.setItem('carlin_id_local', JSON.stringify(updatedUser));
+
     return {
       status: "SUSPENDED",
-      message: `Monetização suspensa para o usuário ${userId}. Motivo: ${reason}`
+      message: `Monetização suspensa com sucesso. Motivo: ${reason}`,
+      updatedUser
     };
   },
 
   /**
    * Simula o endpoint GET /api/v1/creator/payout/history
-   * Retorna objeto com chave 'payouts' e campos 'date' e 'status' (PAID, REFUSED, PROCESSING)
    */
   async getPayoutHistory(user: User): Promise<{ payouts: WithdrawalRequest[] }> {
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    // Se não houver histórico, retorna mocks baseados no spec do usuário
     if (!user.withdrawalHistory || user.withdrawalHistory.length === 0) {
       return {
         payouts: [
@@ -93,7 +100,6 @@ export const impactService = {
 
   /**
    * Simula o endpoint POST /api/v1/creator/payout/request
-   * Resposta padrão: { "status": "PROCESSING", "message": "Pagamento solicitado com sucesso" }
    */
   async requestPayout(user: User, amount: number, method: PaymentMethod, destination: PayoutDestination): Promise<{ success: boolean; status: WithdrawalStatus; message: string; request?: WithdrawalRequest }> {
     if (user.isMonetizationSuspended) {
@@ -108,13 +114,6 @@ export const impactService = {
 
     if (amount > available) {
       return { success: false, status: 'REJECTED', message: "Saldo insuficiente para realizar esta operação." };
-    }
-
-    if (method === 'PIX' && !destination.pixKey) {
-      return { success: false, status: 'REJECTED', message: "Chave PIX é obrigatória para este método." };
-    }
-    if (method === 'PayPal' && !destination.paypalEmail) {
-      return { success: false, status: 'REJECTED', message: "Email do PayPal é obrigatório para este método." };
     }
 
     await new Promise(resolve => setTimeout(resolve, 1500));

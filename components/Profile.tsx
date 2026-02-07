@@ -34,10 +34,11 @@ interface ProfileProps {
   onOpenSupport?: () => void;
   onOpenMonetizationStatus?: () => void;
   onOpenMembershipManager?: () => void;
+  onOpenAdmin?: () => void; // New prop
 }
 
 const Profile: React.FC<ProfileProps> = ({ 
-  user, isLite, isDark, onOpenDashboard, onOpenVerification, onUpdateUser, onOpenCreatorPlus, onOpenAdvancedSettings, onOpenImpactSocial, onOpenSupport, onOpenMonetizationStatus, onOpenMembershipManager
+  user, isLite, isDark, onOpenDashboard, onOpenVerification, onUpdateUser, onOpenCreatorPlus, onOpenAdvancedSettings, onOpenImpactSocial, onOpenSupport, onOpenMonetizationStatus, onOpenMembershipManager, onOpenAdmin
 }) => {
   const [tab, setTab] = useState<'posts' | 'saved' | 'tagged'>('posts');
   const [showEditPhoto, setShowEditPhoto] = useState(false);
@@ -94,9 +95,15 @@ const Profile: React.FC<ProfileProps> = ({
     <div className={`w-full max-w-2xl mx-auto pt-14 lg:pt-8 ${containerClasses} min-h-screen transition-colors pb-32`}>
       <div className="flex items-center justify-between px-5 py-6">
         <BrandLogo size="sm" lightText={isDark} />
-        <button onClick={onOpenAdvancedSettings} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:scale-110 transition-all shadow-lg active:scale-95">
-          <Icons.Settings className="w-5 h-5 text-white" />
-        </button>
+        <div className="flex gap-2">
+           {/* Admin Quick Access Button */}
+           <button onClick={() => onOpenAdmin?.()} className="p-3 bg-red-600/10 rounded-2xl border border-red-500/20 hover:scale-110 transition-all shadow-lg active:scale-95">
+             <span className="text-xs">⚙️</span>
+           </button>
+           <button onClick={onOpenAdvancedSettings} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:scale-110 transition-all shadow-lg active:scale-95">
+             <Icons.Settings className="w-5 h-5 text-white" />
+           </button>
+        </div>
       </div>
 
       <div className="px-5 py-4 space-y-6">
@@ -248,7 +255,7 @@ const LinkCard: React.FC<{ link: ProfileLink; isDark: boolean; cardClasses: stri
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <strong className={`block font-black uppercase tracking-tight truncate ${isSmall ? 'text-[11px]' : 'text-sm'} ${isExclusive ? 'text-purple-400' : isMonetized ? 'text-green-400' : 'text-white'}`}>
+            <strong className={`block font-black uppercase tracking-tight truncate ${isSmall ? 'text-[11px]' : 'text-sm'} ${isExclusive ? 'text-purple-400' : isMonetized ? 'text-green-400' : isPinned ? 'text-blue-400' : 'text-white'}`}>
               {link.title}
             </strong>
           </div>
