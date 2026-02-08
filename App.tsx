@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig, LiteMode, SubscriptionStatus, VerificationLevel, WithdrawalRequest, PaymentMethod, WithdrawalStatus } from './types';
+import { View, User, Post, Story, FeedMode, FeedItem, AdCategoryConfig, LiteConfig, LiteMode, SubscriptionStatus, VerificationLevel, WithdrawalRequest, PaymentMethod, WithdrawalStatus, ProfileLink } from './types';
 import { Icons, BrandLogo } from './constants';
 import Feed from './components/Feed';
 import Profile from './components/Profile';
@@ -44,6 +44,14 @@ declare global {
     setWindowAnimations: (duration: number) => void;
   }
 }
+
+// Configuração definitiva dos Vínculos de Impacto (Links Oficiais)
+const DEVELOPER_LINKS: ProfileLink[] = [
+  { id: 'l1', title: 'Website Oficial', url: 'https://carlinmidia.com', clicks: 850, views: 2400, type: 'pinned', status: 'active' },
+  { id: 'l2', title: 'Plataforma Web', url: 'https://app.carlinmidia.com', clicks: 420, views: 1500, type: 'normal', status: 'active' },
+  { id: 'l3', title: 'Aplicativo Mobile', url: 'https://carlinmidia.app', clicks: 310, views: 900, type: 'normal', status: 'active' },
+  { id: 'l4', title: 'Portfólio Carlin', url: 'https://carlinofic.com', clicks: 185, views: 600, type: 'normal', status: 'active' },
+];
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
@@ -108,24 +116,29 @@ const App: React.FC = () => {
     if (!identity) {
       setCurrentView('register');
     } else if (sessionActive) {
-      // CLEAN MOCKED USER: Zeroed statistics for a clean start
+      // Mocked user with 1,200 followers and official links
       const mockedUser: User = { 
         ...identity!, 
-        followers: 0, 
+        followers: 1200, 
         following: 0,
-        viewsLastYear: 0,
-        averageViewsPerVideo: 0,
-        monetizationEnrolled: false,
-        totalRevenue: 0,
-        availableBalance: 0,
-        points: 0, 
+        viewsLastYear: 185000,
+        averageViewsPerVideo: 12400,
+        monetizationEnrolled: true,
+        totalRevenue: 2450.75,
+        availableBalance: 1200.50,
+        points: 450, 
         displayName: 'Carlinho Ofíc', 
         username: 'carlinho_ofic',
-        avatar: '', // Cleaned photo
-        firstViewDate: new Date().toISOString().split('T')[0], 
+        avatar: '', // Mantendo sem foto como solicitado
+        firstViewDate: '2025-01-15', 
         isActive: true, 
-        membershipTiers: [],
-        withdrawalHistory: [],
+        links: DEVELOPER_LINKS,
+        membershipTiers: [
+          { id: 't1', name: 'Bronze', price: 5, benefits: ['Conteúdo exclusivo', 'Acesso Labs'], subscriberCount: 54 }
+        ],
+        withdrawalHistory: [
+          { id: 'wh1', amount: 500, method: 'PIX' as PaymentMethod, status: 'PAID' as WithdrawalStatus, date: '2025-02-10' }
+        ],
         activeSubscriptions: []
       };
       setCurrentUser(mockedUser);
@@ -199,8 +212,21 @@ const App: React.FC = () => {
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
     setLiteMode(startLite ? LiteMode.LITE_ANTIGO : LiteMode.NORMAL);
-    // CLEAN MOCKED USER ON REGISTRATION
-    const mockedUser = { ...user, followers: 0, following: 0, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, displayName: 'Carlinho Ofíc', username: 'carlinho_ofic', points: 0, firstViewDate: new Date().toISOString().split('T')[0], isActive: true, avatar: '' };
+    const mockedUser = { 
+      ...user, 
+      followers: 1200, 
+      following: 0, 
+      viewsLastYear: 185000, 
+      averageViewsPerVideo: 12400, 
+      monetizationEnrolled: true, 
+      displayName: 'Carlinho Ofíc', 
+      username: 'carlinho_ofic', 
+      points: 450, 
+      firstViewDate: new Date().toISOString().split('T')[0], 
+      isActive: true, 
+      avatar: '',
+      links: DEVELOPER_LINKS
+    };
     setCurrentUser(mockedUser);
     setIsAuthenticated(true);
     setCurrentView('feed');
@@ -217,8 +243,23 @@ const App: React.FC = () => {
     if (!isAuthenticated) {
         if (currentView === 'register') return <Registration onComplete={handleRegistrationComplete} onNavigateToLogin={() => setCurrentView('login')} />;
         return <Login onLogin={(u) => { 
-          // CLEAN MOCKED USER ON LOGIN
-          const mocked = { ...u, followers: 0, following: 0, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, totalRevenue: 0, availableBalance: 0, points: 0, displayName: 'Carlinho Ofíc', username: 'carlinho_ofic', firstViewDate: new Date().toISOString().split('T')[0], isActive: true, avatar: '' };
+          const mocked = { 
+            ...u, 
+            followers: 1200, 
+            following: 0, 
+            viewsLastYear: 185000, 
+            averageViewsPerVideo: 12400, 
+            monetizationEnrolled: true, 
+            totalRevenue: 2450.75, 
+            availableBalance: 1200.50, 
+            points: 450, 
+            displayName: 'Carlinho Ofíc', 
+            username: 'carlinho_ofic', 
+            firstViewDate: '2025-01-15', 
+            isActive: true, 
+            avatar: '',
+            links: DEVELOPER_LINKS
+          };
           setCurrentUser(mocked as User); 
           setIsAuthenticated(true); 
           setCurrentView('feed'); 
