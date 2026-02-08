@@ -116,20 +116,20 @@ const App: React.FC = () => {
     if (!identity) {
       setCurrentView('register');
     } else if (sessionActive) {
-      // PERFIL DO DESENVOLVEDOR: 1.200 Seguidores + Domínios + OURO
+      // PERFIL DO DESENVOLVEDOR: Clean UI absoluta (0 seguidores, 0 seguindo)
       const mockedUser: User = { 
         ...identity!, 
-        followers: 1200, 
-        following: 12,
+        followers: 0, 
+        following: 0,
         viewsLastYear: 280000,
         averageViewsPerVideo: 18400,
         monetizationEnrolled: true,
         totalRevenue: 2850.50,
         availableBalance: 1420.25,
-        points: 850, 
+        points: 8500, 
         displayName: 'Carlinho Ofíc', 
         username: 'carlinho_ofic',
-        avatar: '', // Clean UI: Foto removida para usar iniciais estilizadas
+        avatar: '', 
         firstViewDate: '2024-12-01', 
         isActive: true, 
         isVerified: true,
@@ -215,11 +215,11 @@ const App: React.FC = () => {
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
     setLiteMode(startLite ? LiteMode.LITE_ANTIGO : LiteMode.NORMAL);
-    // Sync post-registration state
+    
     const mockedUser = { 
       ...user, 
-      followers: 1200, 
-      following: 12, 
+      followers: 0, 
+      following: 0, 
       viewsLastYear: 280000, 
       averageViewsPerVideo: 18400, 
       monetizationEnrolled: true, 
@@ -250,8 +250,8 @@ const App: React.FC = () => {
         return <Login onLogin={(u) => { 
           const mocked = { 
             ...u, 
-            followers: 1200, 
-            following: 12, 
+            followers: 0, 
+            following: 0, 
             viewsLastYear: 280000, 
             averageViewsPerVideo: 18400, 
             monetizationEnrolled: true, 

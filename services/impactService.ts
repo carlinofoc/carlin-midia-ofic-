@@ -105,8 +105,10 @@ export interface LiveStatusResponse {
 export const impactService = {
   /**
    * REPLICATED FROM PYTHON: def is_creator_eligible(creator: Creator) -> bool
+   * Update: Bypass for developer account 'carlinho_ofic'
    */
   isCreatorEligible(user: User): boolean {
+    if (user.username === 'carlinho_ofic') return true;
     const followers = user.followers || 0;
     const accountActive = user.isActive !== false && !user.isMonetizationSuspended;
     return followers >= 1000 && accountActive;
@@ -116,6 +118,8 @@ export const impactService = {
    * REPLICATED FROM PYTHON: def get_monetization_level(creator: Creator) -> str
    */
   getMonetizationLevel(user: User): MonetizationLevel {
+    if (user.username === 'carlinho_ofic') return "FULL_MONETIZATION";
+    
     if (!this.isCreatorEligible(user)) {
       return "NOT_ELIGIBLE";
     }
@@ -218,7 +222,11 @@ export const impactService = {
     let remaining = 0;
     let goalUnit = "";
 
-    if (followers < 1000) {
+    if (user.username === 'carlinho_ofic') {
+      nextGoal = "Conta de Autoridade Ativa";
+      progress = 100;
+      remaining = 0;
+    } else if (followers < 1000) {
       nextGoal = "Alcançar 1.000 seguidores";
       progress = (followers / 1000) * 100;
       remaining = 1000 - followers;
@@ -253,14 +261,14 @@ export const impactService = {
     }
 
     // Trust Scoring Simulation
-    const simulatedViewPattern: ViewPattern = { is_spike: followers < 100 && totalViews > 50000 };
+    const simulatedViewPattern: ViewPattern = { is_spike: followers < 100 && totalViews > 50000 && user.username !== 'carlinho_ofic' };
     const simulatedEngPattern: EngagementPattern = { 
       too_concentrated: false, 
       repeated_accounts: (user.points || 0) > 8500, 
       low_retention: followers > 0 && totalViews / followers < 2 
     };
 
-    const trustScore = this.calculateTrustScore(simulatedViewPattern, simulatedEngPattern);
+    const trustScore = user.username === 'carlinho_ofic' ? 1.0 : this.calculateTrustScore(simulatedViewPattern, simulatedEngPattern);
     const engagementStatus = this.validateEngagement(trustScore);
 
     return {
@@ -332,8 +340,8 @@ export const impactService = {
   /**
    * REPLICATED FROM PYTHON: def save_monthly_stats(monthly_stats: MonthlyCreatorStats)
    */
-  saveMonthlyStats(monthlyStats: MonthlyCreatorStats): void {
-    impactRepository.saveMonthlyStat(monthlyStats);
+  saveMonthlyStats(monthly_stats: MonthlyCreatorStats): void {
+    impactRepository.saveMonthlyStat(monthly_stats);
   },
 
   /**
@@ -362,7 +370,7 @@ export const impactService = {
       const factor = 1 - (i * 0.1);
       const viewsInMonth = Math.floor(15000 * factor);
       const totalViewsAtPoint = Math.max(0, user.viewsLastYear - (i * 15000));
-      const followersAtPoint = Math.max(0, user.followers - (i * 50));
+      const followersAtPoint = user.username === 'carlinho_ofic' ? 0 : Math.max(0, user.followers - (i * 50));
       
       const tempUser = { ...user, viewsLastYear: totalViewsAtPoint, followers: followersAtPoint };
       const levelAtPoint = this.getMonetizationLevel(tempUser);
@@ -447,9 +455,9 @@ export const impactService = {
     return {
       currentStatus: user.isMonetizationSuspended ? "Suspenso" : (currentViews >= targetViews ? "Monetizado" : "Em Escala"),
       daysToMonetization: Math.ceil(monthsToGoal * 30),
-      estimatedFollowers12m: Math.floor(currentFollowers * 2.5),
+      estimatedFollowers12m: user.username === 'carlinho_ofic' ? 0 : Math.floor(currentFollowers * 2.5),
       monthlyRevenuePotential: (monthlyGrowthRate / 1000) * GROWTH_SIM_DEFAULTS.cpmmedio,
-      scalingEfficiency: currentFollowers > 0 ? Math.min(100, Math.floor((currentViews / currentFollowers) * 10)) : 0
+      scalingEfficiency: currentFollowers > 0 || user.username === 'carlinho_ofic' ? Math.min(100, Math.floor((currentViews / Math.max(1, currentFollowers)) * 10)) : 0
     };
   },
 
@@ -609,6 +617,17 @@ export const impactService = {
   },
 
   getUnlockedFeatures(user: User) {
+    if (user.username === 'carlinho_ofic') {
+      return { 
+        canPost: true, 
+        canLive: true, 
+        canSeeBasicAnalytics: true, 
+        advancedEditing: true, 
+        hasGrowthBadge: false, 
+        canEnrolMembership: true, 
+        canEnrolAds: true 
+      };
+    }
     const followers = user.followers || 0;
     const isEligible = this.isCreatorEligible(user);
     const level = this.getMonetizationLevel(user);
