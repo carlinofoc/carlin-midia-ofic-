@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, User, Post, Story, FeedMode, FeedItem, LiteConfig, LiteMode } from './types';
 import { Icons, BrandLogo } from './constants';
@@ -17,11 +18,14 @@ import MonetizationStatus from './components/MonetizationStatus';
 import AdminPanel from './components/AdminPanel';
 import LiveSession from './components/LiveSession';
 import AdvancedSettings from './components/AdvancedSettings';
+import InitialSplashScreen from './components/InitialSplashScreen';
+import OfflineScreen from './components/OfflineScreen';
 import { rankFeed } from './services/algorithmService';
 import { dbService } from './services/dbService';
 import { liteModeManager } from './services/liteModeService';
 
 const App: React.FC = () => {
+  const [appReady, setAppReady] = useState(false);
   const [currentView, setCurrentView] = useState<View>('feed');
   const [feedMode, setFeedMode] = useState<FeedMode>('relevance');
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
@@ -99,7 +103,10 @@ const App: React.FC = () => {
   }, [isAuthenticated, currentUser, liteMode]);
 
   const renderView = () => {
+    if (!isOnline && isAuthenticated) return <OfflineScreen onRetry={() => setIsOnline(navigator.onLine)} />;
+    if (!appReady) return <InitialSplashScreen onReady={() => setAppReady(true)} />;
     if (!hasAcceptedTerms) return <TermsOfUse onAccept={() => { setHasAcceptedTerms(true); localStorage.setItem('carlin_terms_accepted', 'true'); }} showAcceptButton={true} />;
+    
     if (!isAuthenticated) {
       if (currentView === 'register') return <Registration onComplete={(u) => { setCurrentUser(u); setIsAuthenticated(true); sessionStorage.setItem('carlin_session', 'true'); setCurrentView('feed'); }} onNavigateToLogin={() => setCurrentView('login')} />;
       return <Login onLogin={(u) => { setCurrentUser(u); setIsAuthenticated(true); sessionStorage.setItem('carlin_session', 'true'); setCurrentView('feed'); }} onNavigateToRegister={() => setCurrentView('register')} />;
@@ -155,25 +162,20 @@ const App: React.FC = () => {
       case 'monetization_status': return <MonetizationStatus user={currentUser!} onBack={() => setCurrentView('profile')} />;
       case 'advanced_settings': return <AdvancedSettings user={currentUser!} onBack={() => setCurrentView('profile')} isDark={darkMode} onToggleDark={() => setDarkMode(!darkMode)} currentMode={liteMode} onSetMode={setLiteMode} liteConfig={liteConfig} onUpdateLiteConfig={setLiteConfig} onOpenSecurityCenter={() => {}} />;
       case 'live_session': return <LiveSession post={activeLivePost!} user={currentUser!} onUpdateUser={setCurrentUser} onBack={() => setCurrentView('feed')} />;
+      case 'admin': return <AdminPanel currentUser={currentUser!} onUpdateUser={setCurrentUser} onBack={() => setCurrentView('profile')} />;
       default: return <div className="p-20 text-center opacity-50 uppercase font-black text-xs">Em desenvolvimento</div>;
     }
   };
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-blue-600 antialiased overflow-hidden">
-      {!isOnline && (
-        <div className="fixed top-0 left-0 w-full bg-red-600 text-white text-[9px] font-black uppercase tracking-widest py-1 text-center z-[10000] animate-in fade-in">
-           Conexão Perdida • Modo Offline Ativo
-        </div>
-      )}
-
       {activeStoryIndex !== null && <StoryViewer stories={stories} initialIndex={activeStoryIndex} onClose={() => setActiveStoryIndex(null)} />}
       
       <main className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth">
         {renderView()}
       </main>
 
-      {isAuthenticated && (
+      {isAuthenticated && appReady && isOnline && (
         <nav className="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around items-center h-24 px-6 pb-8 z-[500]">
           <NavButton icon={<Icons.Home className="w-6 h-6" />} active={currentView === 'feed'} onClick={() => setCurrentView('feed')} />
           <NavButton icon={<Icons.Search className="w-6 h-6" />} active={currentView === 'explore'} onClick={() => setCurrentView('explore')} />

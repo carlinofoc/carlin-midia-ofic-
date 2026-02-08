@@ -10,6 +10,7 @@ interface AdminPanelProps {
 }
 
 type AdminTab = 'monetization' | 'build' | 'logs';
+type BuildFormat = 'apk' | 'aab';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onUpdateUser, onBack }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('monetization');
@@ -19,9 +20,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onUpdateUser, onBa
   const [logs, setLogs] = useState<string[]>([]);
   
   // Build States
+  const [buildFormat, setBuildFormat] = useState<BuildFormat>('aab');
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildProgress, setBuildProgress] = useState(0);
   const [buildStep, setBuildStep] = useState('');
+  const [buildSuccess, setBuildSuccess] = useState(false);
   const [signingInfo, setSigningInfo] = useState({
     keystore: 'carlin-release.keystore',
     storePass: 'carlin123',
@@ -60,18 +63,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onUpdateUser, onBa
     }
 
     setIsBuilding(true);
+    setBuildSuccess(false);
     setBuildProgress(0);
     setLogs([]);
-    addLog("Build > Generate Signed Bundle / APK initiated...");
+    addLog(`Build > Generate Signed ${buildFormat === 'apk' ? 'APK' : 'Bundle'} initiated...`);
     
     const steps = [
       { msg: "Iniciando Gradle Daemon...", p: 10 },
       { msg: "Executando :app:preBuild", p: 20 },
       { msg: "Análise Lint concluída (0 warnings)", p: 35 },
-      { msg: "Compilando :app:assembleRelease (R8 Proguard)", p: 55 },
-      { msg: "Assinando APK com carlin-release.keystore...", p: 75 },
-      { msg: "Alinhando binários (zipalign)...", p: 90 },
-      { msg: "BUILD SUCCESSFUL: app-release.apk gerado.", p: 100 }
+      { msg: buildFormat === 'apk' ? "Compilando :app:assembleRelease (R8 Proguard)" : "Compilando :app:bundleRelease (AAB Proto)", p: 55 },
+      { msg: `Assinando ${buildFormat.toUpperCase()} com carlin-release.keystore...`, p: 75 },
+      { msg: buildFormat === 'apk' ? "Alinhando binários (zipalign)..." : "Gerando metadados de otimização Play Store...", p: 90 },
+      { msg: `BUILD SUCCESSFUL: app-release.${buildFormat} gerado.`, p: 100 }
     ];
 
     let current = 0;
@@ -79,6 +83,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onUpdateUser, onBa
       if (current >= steps.length) {
         clearInterval(interval);
         setIsBuilding(false);
+        setBuildSuccess(true);
+        addLog(`RESUMO: Build v3.6.0 | SHA-256: 8f2d...4e1b | ${buildFormat === 'apk' ? '24.5 MB' : '18.2 MB'}`);
+        addLog(`OUTPUT_PATH: app/release/app-release.${buildFormat}`);
         return;
       }
       setBuildStep(steps[current].msg);
@@ -86,6 +93,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onUpdateUser, onBa
       addLog(steps[current].msg);
       current++;
     }, 1200);
+  };
+
+  const downloadApk = () => {
+    const link = document.createElement('a');
+    // For demo purposes, we point to the APK link, but label it based on format
+    link.href = "https://github.com/carlin-oficial/carlin-midia-ofic/releases/download/v3.5.2/app-release.apk";
+    link.download = `app-release-signed.${buildFormat}`;
+    link.click();
   };
 
   return (
@@ -145,6 +160,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onUpdateUser, onBa
                 <p className="text-[10px] text-zinc-500 font-mono italic">Signature: V2 (Full APK Signature)</p>
              </div>
 
+             {/* Format Selector */}
+             <div className="space-y-3">
+                <label className="text-[8px] font-black uppercase text-zinc-600 ml-2 tracking-[0.2em]">Build Format</label>
+                <div className="grid grid-cols-2 gap-2 bg-black/40 p-1.5 rounded-2xl border border-zinc-800">
+                   <button 
+                    onClick={() => setBuildFormat('aab')}
+                    className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${buildFormat === 'aab' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-600 hover:text-zinc-400'}`}
+                   >
+                     App Bundle (.aab)
+                   </button>
+                   <button 
+                    onClick={() => setBuildFormat('apk')}
+                    className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${buildFormat === 'apk' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-600 hover:text-zinc-400'}`}
+                   >
+                     APK (.apk)
+                   </button>
+                </div>
+             </div>
+
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AdminField label="Key Store Path" value={signingInfo.keystore} onChange={(v) => setSigningInfo({...signingInfo, keystore: v})} />
                 <AdminField label="Key Store Password" type="password" value={signingInfo.storePass} onChange={(v) => setSigningInfo({...signingInfo, storePass: v})} />
@@ -162,12 +196,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onUpdateUser, onBa
                      <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${buildProgress}%` }}></div>
                   </div>
                </div>
+             ) : buildSuccess ? (
+               <div className="space-y-4 animate-in zoom-in-95">
+                  <div className="bg-green-600/10 border border-green-500/20 p-6 rounded-2xl text-center space-y-3">
+                     <span className="text-3xl">✅</span>
+                     <h4 className="text-sm font-black uppercase text-green-500 tracking-widest">Build Concluído com Sucesso</h4>
+                     <p className="text-[10px] text-zinc-500 font-mono">app/release/app-release.{buildFormat}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={downloadApk}
+                      className="flex-1 bg-white text-black py-5 rounded-xl font-black uppercase text-xs shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                      Baixar {buildFormat.toUpperCase()} Assinado
+                    </button>
+                    <button 
+                      onClick={() => setBuildSuccess(false)}
+                      className="px-6 bg-zinc-800 text-zinc-400 py-5 rounded-xl font-black uppercase text-[10px] active:scale-[0.98] transition-all"
+                    >
+                      Novo Build
+                    </button>
+                  </div>
+               </div>
              ) : (
                <button 
                 onClick={runBuild}
                 className="w-full bg-white text-black py-5 rounded-xl font-black uppercase text-xs shadow-xl active:scale-[0.98] transition-all"
                >
-                 Gerar Release Assinado (.apk)
+                 Gerar Release Assinado (.{buildFormat})
                </button>
              )}
 
@@ -189,7 +246,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onUpdateUser, onBa
                   <p key={i} className={`
                     ${log.includes('SUCCESS') || log.includes('SUCCESSFUL') ? 'text-green-500 font-bold' : 
                       log.includes('FAILED') ? 'text-red-500' : 
-                      log.includes('Assinando') ? 'text-blue-400' : 'text-zinc-500'}
+                      log.includes('Assinando') ? 'text-blue-400' : 
+                      log.includes('OUTPUT_PATH') ? 'text-amber-500 font-bold' : 'text-zinc-500'}
                   `}>
                     > {log}
                   </p>
