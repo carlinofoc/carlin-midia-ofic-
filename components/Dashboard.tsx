@@ -87,7 +87,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onBack, onUpdateUser }) => 
           </button>
           <div className="text-right">
             <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none text-blue-500">Analytics Pro</h1>
-            <span className="text-[7px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-1">Sincronização Engine v10.0</span>
+            <span className="text-[7px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-1">Sincronização Engine v10.1</span>
           </div>
         </div>
 
@@ -181,20 +181,30 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onBack, onUpdateUser }) => 
                </div>
                
                {/* TRUST SCORE INTEGRATION BASED ON PYTHON SNIPPET */}
-               <div className="pt-6 border-t border-zinc-800/50 relative z-10">
-                  <div className="flex justify-between items-center mb-2">
-                     <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">Fator de Confiança (Trust Score)</p>
-                     <span className={`text-[10px] font-black italic ${snapshot.trust_score >= 0.8 ? 'text-green-400' : snapshot.trust_score >= 0.5 ? 'text-amber-400' : 'text-red-500'}`}>
+               <div className="pt-6 border-t border-zinc-800/50 relative z-10 space-y-4">
+                  <div className="flex justify-between items-center">
+                     <div className="space-y-0.5">
+                        <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">Fator de Confiança (Trust Score)</p>
+                        <p className="text-[6px] font-bold text-zinc-600 uppercase tracking-widest">Auditoria Guardian v10.1 Ativa</p>
+                     </div>
+                     <span className={`text-sm font-black italic ${snapshot.engagement_status === 'VALID' ? 'text-green-400' : snapshot.engagement_status === 'PARTIAL' ? 'text-amber-400' : 'text-red-500'}`}>
                         {(snapshot.trust_score * 100).toFixed(0)}%
                      </span>
                   </div>
                   <div className="h-1.5 w-full bg-black rounded-full overflow-hidden border border-zinc-800 p-0.5">
                      <div 
-                        className={`h-full transition-all duration-1000 ease-out rounded-full ${snapshot.trust_score >= 0.8 ? 'bg-green-500' : snapshot.trust_score >= 0.5 ? 'bg-amber-500' : 'bg-red-500'}`}
+                        className={`h-full transition-all duration-1000 ease-out rounded-full ${snapshot.engagement_status === 'VALID' ? 'bg-green-500' : snapshot.engagement_status === 'PARTIAL' ? 'bg-amber-500' : 'bg-red-500'}`}
                         style={{ width: `${snapshot.trust_score * 100}%` }}
                      ></div>
                   </div>
-                  <p className="text-[7px] text-zinc-600 mt-2 uppercase font-bold tracking-widest">Auditoria Guardian v10: Análise de padrões de engajamento ativa.</p>
+
+                  {/* Integrity Checklist Details */}
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                     <IntegrityCheck label="Padrão Natural" pass={!snapshot.trust_details.view_pattern.is_spike} />
+                     <IntegrityCheck label="Engajamento Orgânico" pass={!snapshot.trust_details.engagement_pattern.too_concentrated} />
+                     <IntegrityCheck label="Público Diversificado" pass={!snapshot.trust_details.engagement_pattern.repeated_accounts} />
+                     <IntegrityCheck label="Retenção de Valor" pass={!snapshot.trust_details.engagement_pattern.low_retention} />
+                  </div>
                </div>
             </div>
             
@@ -303,6 +313,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onBack, onUpdateUser }) => 
     </div>
   );
 };
+
+const IntegrityCheck: React.FC<{ label: string; pass: boolean }> = ({ label, pass }) => (
+  <div className="bg-black/40 border border-zinc-800/50 p-2 rounded-lg flex items-center gap-2">
+     <span className={pass ? "text-green-500" : "text-red-500"}>{pass ? '✓' : '×'}</span>
+     <span className="text-[7px] font-black uppercase tracking-tight text-zinc-400">{label}</span>
+  </div>
+);
 
 // Fixed: Explicitly typed sub-components as React.FC to allow proper 'key' prop handling in JSX
 const SnapshotMetric: React.FC<{ label: string; value: string; icon: string; color?: string }> = ({ label, value, icon, color = "text-white" }) => (

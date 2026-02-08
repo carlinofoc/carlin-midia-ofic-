@@ -1,8 +1,8 @@
-import { User, ImpactResult, SocialDonation, Post, MonetizationResult, CreatorTier, MembershipTier, WithdrawalRequest, PaymentMethod, WithdrawalStatus, PayoutDestination, MonetizationLevel, CreatorBenefits, CreatorDashboardSnapshot, MonthlyCreatorStats } from '../types';
+import { User, ImpactResult, SocialDonation, Post, MonetizationResult, CreatorTier, MembershipTier, WithdrawalRequest, PaymentMethod, WithdrawalStatus, PayoutDestination, MonetizationLevel, CreatorBenefits, CreatorDashboardSnapshot, MonthlyCreatorStats, ViewPattern, EngagementPattern, TrustDetails } from '../types';
 import { impactRepository } from './impactRepository';
 
 /**
- * Carlin Impact Engine v10.0.1 - Engagement Validation Integration
+ * Carlin Impact Engine v10.0.3 - Strict Engagement Validation
  */
 
 const VALOR_BASE_SPOT = 0.50; 
@@ -26,16 +26,6 @@ export const GROWTH_SIM_DEFAULTS = {
   cpmmedio: 8.50,
   livesPorMes: 20
 };
-
-export interface ViewPattern {
-  isSpike: boolean;
-}
-
-export interface EngagementPattern {
-  tooConcentrated: boolean;
-  repeatedAccounts: boolean;
-  lowRetention: boolean;
-}
 
 export interface CreatorGrowthProjection {
   currentStatus: string;
@@ -182,19 +172,19 @@ export const impactService = {
   calculateTrustScore(viewPattern: ViewPattern, engagementPattern: EngagementPattern): number {
     let score = 1.0;
 
-    if (viewPattern.isSpike) {
+    if (viewPattern.is_spike) {
       score -= 0.3;
     }
 
-    if (engagementPattern.tooConcentrated) {
+    if (engagementPattern.too_concentrated) {
       score -= 0.2;
     }
 
-    if (engagementPattern.repeatedAccounts) {
+    if (engagementPattern.repeated_accounts) {
       score -= 0.3;
     }
 
-    if (engagementPattern.lowRetention) {
+    if (engagementPattern.low_retention) {
       score -= 0.2;
     }
 
@@ -203,6 +193,7 @@ export const impactService = {
 
   /**
    * REPLICATED FROM PYTHON: def validate_engagement(trust_score)
+   * Precisely follows the thresholds: 0.7 -> VALID, 0.4 -> PARTIAL, else INVALID.
    */
   validateEngagement(trustScore: number): 'VALID' | 'PARTIAL' | 'INVALID' {
     if (trustScore >= 0.7) {
@@ -261,12 +252,12 @@ export const impactService = {
       estimatedRevenue = this.applyEngagementBonus(baseRevenue, bonus);
     }
 
-    // Trust Scoring Simulation based on account history
-    const simulatedViewPattern: ViewPattern = { isSpike: followers < 100 && totalViews > 50000 };
+    // Trust Scoring Simulation
+    const simulatedViewPattern: ViewPattern = { is_spike: followers < 100 && totalViews > 50000 };
     const simulatedEngPattern: EngagementPattern = { 
-      tooConcentrated: false, 
-      repeatedAccounts: user.points ? user.points > 8000 : false, 
-      lowRetention: false 
+      too_concentrated: false, 
+      repeated_accounts: (user.points || 0) > 8500, 
+      low_retention: followers > 0 && totalViews / followers < 2 
     };
 
     const trustScore = this.calculateTrustScore(simulatedViewPattern, simulatedEngPattern);
@@ -285,6 +276,10 @@ export const impactService = {
       progress_percentage: parseFloat(progress.toFixed(2)),
       trust_score: trustScore,
       engagement_status: engagementStatus,
+      trust_details: {
+        view_pattern: simulatedViewPattern,
+        engagement_pattern: simulatedEngPattern
+      },
       last_update: new Date().toISOString()
     };
   },
@@ -343,7 +338,6 @@ export const impactService = {
 
   /**
    * REPLICATED FROM PYTHON: class MonthlyCreatorStats implementation
-   * Updated to use getCreatorMonthlyHistory logic for consistent data retrieval.
    */
   getMonthlyStats(user: User): MonthlyCreatorStats[] {
     const userStats = impactRepository.getCreatorMonthlyHistory(user.id);

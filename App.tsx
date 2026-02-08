@@ -108,26 +108,24 @@ const App: React.FC = () => {
     if (!identity) {
       setCurrentView('register');
     } else if (sessionActive) {
-      // REPLICATED FROM PYTHON TEST CASE: followers=1200, views=180k, first_view=2025-03-01
+      // CLEAN MOCKED USER: Zeroed statistics for a clean start
       const mockedUser: User = { 
         ...identity!, 
-        followers: 1200, 
-        viewsLastYear: 180000,
-        averageViewsPerVideo: 15400,
-        monetizationEnrolled: true,
-        totalRevenue: 1820.50,
-        availableBalance: 920.25,
-        points: 450, 
+        followers: 0, 
+        following: 0,
+        viewsLastYear: 0,
+        averageViewsPerVideo: 0,
+        monetizationEnrolled: false,
+        totalRevenue: 0,
+        availableBalance: 0,
+        points: 0, 
         displayName: 'Carlinho Ofíc', 
         username: 'carlinho_ofic',
-        firstViewDate: '2025-03-01', // Data exata do snippet Python
-        isActive: true, // account_active=True
-        membershipTiers: [
-          { id: 't1', name: 'Bronze', price: 5, benefits: ['Acesso antecipado'], subscriberCount: 42 }
-        ],
-        withdrawalHistory: [
-          { id: 'h1', amount: 350, method: 'PIX' as PaymentMethod, status: 'PAID' as WithdrawalStatus, date: '12/04/2024' }
-        ],
+        avatar: '', // Cleaned photo
+        firstViewDate: new Date().toISOString().split('T')[0], 
+        isActive: true, 
+        membershipTiers: [],
+        withdrawalHistory: [],
         activeSubscriptions: []
       };
       setCurrentUser(mockedUser);
@@ -201,7 +199,8 @@ const App: React.FC = () => {
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
     setLiteMode(startLite ? LiteMode.LITE_ANTIGO : LiteMode.NORMAL);
-    const mockedUser = { ...user, followers: 65, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, displayName: 'Carlinho Ofíc', username: 'carlinho_ofic', points: 0, firstViewDate: new Date().toISOString().split('T')[0], isActive: true };
+    // CLEAN MOCKED USER ON REGISTRATION
+    const mockedUser = { ...user, followers: 0, following: 0, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, displayName: 'Carlinho Ofíc', username: 'carlinho_ofic', points: 0, firstViewDate: new Date().toISOString().split('T')[0], isActive: true, avatar: '' };
     setCurrentUser(mockedUser);
     setIsAuthenticated(true);
     setCurrentView('feed');
@@ -218,7 +217,8 @@ const App: React.FC = () => {
     if (!isAuthenticated) {
         if (currentView === 'register') return <Registration onComplete={handleRegistrationComplete} onNavigateToLogin={() => setCurrentView('login')} />;
         return <Login onLogin={(u) => { 
-          const mocked = { ...u, followers: 1200, viewsLastYear: 180000, averageViewsPerVideo: 15400, monetizationEnrolled: true, totalRevenue: 1820.50, availableBalance: 920.25, points: 150, displayName: 'Carlinho Ofíc', username: 'carlinho_ofic', firstViewDate: '2025-03-01', isActive: true };
+          // CLEAN MOCKED USER ON LOGIN
+          const mocked = { ...u, followers: 0, following: 0, viewsLastYear: 0, averageViewsPerVideo: 0, monetizationEnrolled: false, totalRevenue: 0, availableBalance: 0, points: 0, displayName: 'Carlinho Ofíc', username: 'carlinho_ofic', firstViewDate: new Date().toISOString().split('T')[0], isActive: true, avatar: '' };
           setCurrentUser(mocked as User); 
           setIsAuthenticated(true); 
           setCurrentView('feed'); 
@@ -392,8 +392,8 @@ const App: React.FC = () => {
           <button onClick={() => setCurrentView('reels')} className={`p-2 ${currentView === 'reels' ? 'text-blue-500' : 'text-zinc-500'}`}><Icons.Play className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('create')} className={`p-2 ${currentView === 'create' ? 'text-blue-500' : 'text-zinc-500'}`}><Icons.Plus className="w-7 h-7" /></button>
           <button onClick={() => setCurrentView('profile')} className={`p-2 ${currentView === 'profile' ? 'text-blue-500' : 'text-zinc-500'}`}>
-            <div className={`w-7 h-7 rounded-full overflow-hidden border ${currentView === 'profile' ? 'border-blue-500' : 'border-zinc-300'}`}>
-               <img src={currentUser?.avatar || 'assets/profile.png'} className="w-full h-full object-cover" />
+            <div className={`w-7 h-7 rounded-full overflow-hidden border ${currentView === 'profile' ? 'border-blue-500' : 'border-zinc-300'} bg-zinc-900 flex items-center justify-center`}>
+               <span className="text-[10px] font-black text-zinc-600 italic">{currentUser?.displayName?.charAt(0).toUpperCase()}</span>
             </div>
           </button>
         </nav>

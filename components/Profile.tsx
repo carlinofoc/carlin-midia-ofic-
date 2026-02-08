@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, ProfileLink, VerificationLevel } from '../types';
 import { Icons, BrandLogo } from '../constants';
@@ -34,7 +33,7 @@ interface ProfileProps {
   onOpenSupport?: () => void;
   onOpenMonetizationStatus?: () => void;
   onOpenMembershipManager?: () => void;
-  onOpenAdmin?: () => void; // New prop
+  onOpenAdmin?: () => void;
 }
 
 const Profile: React.FC<ProfileProps> = ({ 
@@ -96,7 +95,6 @@ const Profile: React.FC<ProfileProps> = ({
       <div className="flex items-center justify-between px-5 py-6">
         <BrandLogo size="sm" lightText={isDark} />
         <div className="flex gap-2">
-           {/* Admin Quick Access Button */}
            <button onClick={() => onOpenAdmin?.()} className="p-3 bg-red-600/10 rounded-2xl border border-red-500/20 hover:scale-110 transition-all shadow-lg active:scale-95">
              <span className="text-xs">⚙️</span>
            </button>
@@ -109,9 +107,12 @@ const Profile: React.FC<ProfileProps> = ({
       <div className="px-5 py-4 space-y-6">
         <div className="flex items-center justify-between gap-6">
           <div className="relative group cursor-pointer" onClick={() => setShowEditPhoto(true)}>
-            <div className={`w-24 h-24 md:w-32 md:h-32 rounded-full p-[3px] transition-all ${user.verificationLevel === VerificationLevel.OURO ? 'bg-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]' : isLite ? 'bg-zinc-800' : 'bg-gradient-to-tr from-blue-600 to-blue-400'}`}>
-              <div className={`w-full h-full rounded-full ${isDark ? 'bg-black' : 'bg-white'} overflow-hidden border-2 ${isDark ? 'border-black' : 'border-white'} relative`}>
-                <img src={liteModeManager.getOptimizedImageUrl(user.avatar || 'assets/profile.png')} className="w-full h-full object-cover group-hover:opacity-70 transition-opacity" />
+            {/* NO PHOTO MODE: Renders a styled initial instead of an image */}
+            <div className={`w-24 h-24 md:w-32 md:h-32 rounded-full p-[3px] transition-all ${user.verificationLevel === VerificationLevel.OURO ? 'bg-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]' : 'bg-zinc-800'}`}>
+              <div className={`w-full h-full rounded-full ${isDark ? 'bg-zinc-900' : 'bg-white'} overflow-hidden border-2 ${isDark ? 'border-black' : 'border-white'} relative flex items-center justify-center`}>
+                <span className="text-3xl md:text-4xl font-black text-zinc-600 italic select-none">
+                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'C'}
+                </span>
               </div>
             </div>
             {user.isFaciallyVerified && (
@@ -122,7 +123,7 @@ const Profile: React.FC<ProfileProps> = ({
           </div>
 
           <div className="flex flex-1 justify-around text-center">
-            <div><p className="font-black text-lg">12</p><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Posts</p></div>
+            <div><p className="font-black text-lg">0</p><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Posts</p></div>
             <div><p className="font-black text-lg">{user.followers.toLocaleString()}</p><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Seguidores</p></div>
             <div><p className="font-black text-lg">{user.following.toLocaleString()}</p><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Seguindo</p></div>
           </div>
@@ -216,12 +217,12 @@ const Profile: React.FC<ProfileProps> = ({
         <button onClick={() => setTab('saved')} className={`flex-1 flex justify-center py-4 ${tab === 'saved' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-orange-500 text-orange-500'}` : 'text-zinc-500'}`}><Icons.Bookmark className="w-6 h-6" /></button>
       </div>
 
-      <div className="grid grid-cols-3 gap-0.5">
-        {Array.from({ length: 9 }).map((_, i) => (
-          <div key={i} className={`aspect-square ${isDark ? 'bg-zinc-900' : 'bg-zinc-200'} overflow-hidden relative group`}>
-            <img src={liteModeManager.getOptimizedImageUrl(`https://picsum.photos/seed/p-${i}/400/400`)} className="w-full h-full object-cover" loading="lazy" />
-          </div>
-        ))}
+      {/* CLEAN GRID MODE: No mock photos rendered here */}
+      <div className="py-20 text-center space-y-4 opacity-30">
+        <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 mx-auto flex items-center justify-center">
+           <Icons.Home className="w-8 h-8 text-zinc-700" />
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Nenhuma publicação disponível</p>
       </div>
 
       {showEditPhoto && <EditProfilePhoto currentAvatar={user.avatar || 'assets/profile.png'} onUpdate={handleAvatarUpdate} onCancel={() => setShowEditPhoto(false)} />}

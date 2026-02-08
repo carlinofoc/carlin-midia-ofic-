@@ -17,6 +17,26 @@ export type PaymentMethod = 'PayPal' | 'PIX' | 'Transferência Bancária';
 
 export type MonetizationLevel = 'NOT_ELIGIBLE' | 'CREATOR_PROGRAM' | 'PARTIAL_MONETIZATION' | 'ADVANCED_PARTIAL_MONETIZATION' | 'FULL_MONETIZATION';
 
+// Add missing ViewPattern interface to fix impactService.ts errors
+export interface ViewPattern {
+  is_spike: boolean;
+}
+
+// Add missing EngagementPattern interface to fix impactService.ts errors
+export interface EngagementPattern {
+  too_concentrated: boolean;
+  repeated_accounts: boolean;
+  low_retention: boolean;
+}
+
+/**
+ * Updated TrustDetails to use newly exported interfaces
+ */
+export interface TrustDetails {
+  view_pattern: ViewPattern;
+  engagement_pattern: EngagementPattern;
+}
+
 /**
  * Replicates Python: class CreatorDashboard logic
  */
@@ -33,6 +53,7 @@ export interface CreatorDashboardSnapshot {
   progress_percentage: number;
   trust_score: number;
   engagement_status: 'VALID' | 'PARTIAL' | 'INVALID';
+  trust_details: TrustDetails;
   last_update: string;
   disclaimer?: string;
 }

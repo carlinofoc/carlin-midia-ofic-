@@ -1,8 +1,14 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { VerificationLevel } from "../types";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+const logUsage = (response: any) => {
+  if (response.usageMetadata) {
+    console.log("Entrada tokens:", response.usageMetadata.promptTokenCount);
+    console.log("Saída tokens:", response.usageMetadata.candidatesTokenCount);
+  }
+};
 
 export const analyzeVerification = async (base64Selfie: string): Promise<{ 
   success: boolean; 
@@ -53,6 +59,7 @@ export const analyzeVerification = async (base64Selfie: string): Promise<{
         }
       }
     });
+    logUsage(response);
     const jsonStr = (response.text || "").trim();
     return JSON.parse(jsonStr);
   } catch (error) {
@@ -63,7 +70,7 @@ export const analyzeVerification = async (base64Selfie: string): Promise<{
       message: "Biometria validada por redundância local.", 
       facialVector: Array.from({length: 64}, () => Math.random()),
       livenessConfirmed: true,
-      documentDetected: false // Default to false in case of error
+      documentDetected: false 
     };
   }
 };
@@ -92,6 +99,7 @@ export const analyzeProfilePhoto = async (base64Image: string): Promise<{ safe: 
         }
       }
     });
+    logUsage(response);
     return JSON.parse(response.text || '{"safe":true, "authentic":true}');
   } catch (error) {
     console.error("Profile Photo Analysis Error:", error);
@@ -117,6 +125,7 @@ export const moderateBio = async (bio: string): Promise<{ approved: boolean; rea
         }
       }
     });
+    logUsage(response);
     return JSON.parse(response.text || '{"approved":true}');
   } catch (error) {
     console.error("Bio Moderation Error:", error);
@@ -134,6 +143,7 @@ export const simulateAIResponse = async (input: string, context: string): Promis
         systemInstruction: "You are Nexus AI, a helpful and direct assistant for the Carlin Mídia Ofic social platform. Answer questions about the platform concisely and professionally.",
       }
     });
+    logUsage(response);
     return response.text || "Desculpe, não consigo responder agora.";
   } catch (error) {
     console.error("simulateAIResponse error:", error);
@@ -148,6 +158,7 @@ export const generateCaption = async (description: string): Promise<string> => {
       model: 'gemini-3-flash-preview',
       contents: `Write a short, engaging, and creative social media caption for a post with this content: ${description}. Use a few relevant emojis.`,
     });
+    logUsage(response);
     return response.text || "Acabei de postar algo novo no Carlin!";
   } catch (error) {
     console.error("generateCaption error:", error);
