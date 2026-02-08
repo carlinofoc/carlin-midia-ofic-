@@ -34,6 +34,18 @@ const App: React.FC = () => {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState<boolean>(() => localStorage.getItem('carlin_terms_accepted') === 'true');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const identity = dbService.verificarIdentidadeLocal();
@@ -98,7 +110,13 @@ const App: React.FC = () => {
         return (
           <div className="flex flex-col w-full max-w-xl mx-auto pb-24 animate-slide-up">
             <div className="sticky top-0 z-[200] glass border-b border-white/5 px-6 pt-14 pb-4 flex items-center justify-between">
-              <BrandLogo size="sm" />
+              <div className="flex items-center gap-3">
+                 <BrandLogo size="sm" />
+                 <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-full border border-white/5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+                    <span className="text-[7px] font-black uppercase text-zinc-500 tracking-widest">{isOnline ? 'Live Sync' : 'Offline'}</span>
+                 </div>
+              </div>
               <div className="flex gap-2">
                  <button onClick={() => setCurrentView('create')} className="p-2.5 bg-zinc-900/50 hover:bg-zinc-800 rounded-2xl border border-white/5 transition-all active:scale-90"><Icons.Plus className="w-5 h-5" /></button>
                  <button className="p-2.5 bg-zinc-900/50 hover:bg-zinc-800 rounded-2xl border border-white/5 transition-all active:scale-90"><Icons.Message className="w-5 h-5" /></button>
@@ -143,6 +161,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-blue-600 antialiased overflow-hidden">
+      {!isOnline && (
+        <div className="fixed top-0 left-0 w-full bg-red-600 text-white text-[9px] font-black uppercase tracking-widest py-1 text-center z-[10000] animate-in fade-in">
+           Conexão Perdida • Modo Offline Ativo
+        </div>
+      )}
+
       {activeStoryIndex !== null && <StoryViewer stories={stories} initialIndex={activeStoryIndex} onClose={() => setActiveStoryIndex(null)} />}
       
       <main className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth">
