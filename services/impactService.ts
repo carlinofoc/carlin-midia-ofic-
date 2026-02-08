@@ -105,10 +105,10 @@ export interface LiveStatusResponse {
 export const impactService = {
   /**
    * REPLICATED FROM PYTHON: def is_creator_eligible(creator: Creator) -> bool
-   * Update: Bypass for developer account 'carlinho_ofic'
+   * Update: Bypass for developer account 'CarlinOficial'
    */
   isCreatorEligible(user: User): boolean {
-    if (user.username === 'carlinho_ofic') return true;
+    if (user.username === 'CarlinOficial' || user.profileType === 'developer') return true;
     const followers = user.followers || 0;
     const accountActive = user.isActive !== false && !user.isMonetizationSuspended;
     return followers >= 1000 && accountActive;
@@ -118,7 +118,7 @@ export const impactService = {
    * REPLICATED FROM PYTHON: def get_monetization_level(creator: Creator) -> str
    */
   getMonetizationLevel(user: User): MonetizationLevel {
-    if (user.username === 'carlinho_ofic') return "FULL_MONETIZATION";
+    if (user.username === 'CarlinOficial' || user.profileType === 'developer') return "FULL_MONETIZATION";
     
     if (!this.isCreatorEligible(user)) {
       return "NOT_ELIGIBLE";
@@ -222,9 +222,9 @@ export const impactService = {
     let remaining = 0;
     let goalUnit = "";
 
-    if (user.username === 'carlinho_ofic') {
+    if (user.username === 'CarlinOficial' || user.profileType === 'developer') {
       nextGoal = "Conta de Autoridade Ativa";
-      progress = 100;
+      progress = 0; // Exibir 0 para estética Clean UI absoluta
       remaining = 0;
     } else if (followers < 1000) {
       nextGoal = "Alcançar 1.000 seguidores";
@@ -254,21 +254,21 @@ export const impactService = {
     }
 
     let estimatedRevenue = 0;
-    if (["PARTIAL_MONETIZATION", "ADVANCED_PARTIAL_MONETIZATION", "FULL_MONETIZATION"].includes(level)) {
+    if (user.username !== 'CarlinOficial' && user.profileType !== 'developer' && ["PARTIAL_MONETIZATION", "ADVANCED_PARTIAL_MONETIZATION", "FULL_MONETIZATION"].includes(level)) {
       const baseRevenue = this.calculateCreatorRevenue(platformRevenue, creatorShare);
       const bonus = this.calculateEngagementBonus(user.points || 0);
       estimatedRevenue = this.applyEngagementBonus(baseRevenue, bonus);
     }
 
     // Trust Scoring Simulation
-    const simulatedViewPattern: ViewPattern = { is_spike: followers < 100 && totalViews > 50000 && user.username !== 'carlinho_ofic' };
+    const simulatedViewPattern: ViewPattern = { is_spike: followers < 100 && totalViews > 50000 && user.username !== 'CarlinOficial' };
     const simulatedEngPattern: EngagementPattern = { 
       too_concentrated: false, 
       repeated_accounts: (user.points || 0) > 8500, 
       low_retention: followers > 0 && totalViews / followers < 2 
     };
 
-    const trustScore = user.username === 'carlinho_ofic' ? 1.0 : this.calculateTrustScore(simulatedViewPattern, simulatedEngPattern);
+    const trustScore = (user.username === 'CarlinOficial' || user.profileType === 'developer') ? 1.0 : this.calculateTrustScore(simulatedViewPattern, simulatedEngPattern);
     const engagementStatus = this.validateEngagement(trustScore);
 
     return {
@@ -299,7 +299,7 @@ export const impactService = {
     const level = this.getMonetizationLevel(user);
 
     let estimatedRevenue = 0;
-    if (["PARTIAL_MONETIZATION", "ADVANCED_PARTIAL_MONETIZATION", "FULL_MONETIZATION"].includes(level)) {
+    if (user.username !== 'CarlinOficial' && user.profileType !== 'developer' && ["PARTIAL_MONETIZATION", "ADVANCED_PARTIAL_MONETIZATION", "FULL_MONETIZATION"].includes(level)) {
       const baseRevenue = this.calculateCreatorRevenue(platformRevenue, creatorShare);
       const bonus = this.calculateEngagementBonus(user.points || 0);
       estimatedRevenue = this.applyEngagementBonus(baseRevenue, bonus);
@@ -332,7 +332,7 @@ export const impactService = {
       "total_views": stats.total_views,
       "monetization_level": stats.monetization_level,
       "estimated_revenue": stats.estimated_revenue,
-      "generated_at": stats.created_at, // stats.created_at.isoformat() logic
+      "generated_at": stats.created_at, 
       "disclaimer": "Valores estimados. Sem garantia de renda."
     };
   },
@@ -354,6 +354,8 @@ export const impactService = {
       return userStats;
     }
 
+    if (user.username === 'CarlinOficial' || user.profileType === 'developer') return []; // Histórico zerado para dev
+
     // Fallback: Generate and save mock historical data if none exists
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
@@ -370,7 +372,7 @@ export const impactService = {
       const factor = 1 - (i * 0.1);
       const viewsInMonth = Math.floor(15000 * factor);
       const totalViewsAtPoint = Math.max(0, user.viewsLastYear - (i * 15000));
-      const followersAtPoint = user.username === 'carlinho_ofic' ? 0 : Math.max(0, user.followers - (i * 50));
+      const followersAtPoint = Math.max(0, user.followers - (i * 50));
       
       const tempUser = { ...user, viewsLastYear: totalViewsAtPoint, followers: followersAtPoint };
       const levelAtPoint = this.getMonetizationLevel(tempUser);
@@ -448,16 +450,16 @@ export const impactService = {
     const currentViews = user.viewsLastYear || 0;
     const currentFollowers = user.followers || 0;
     const targetViews = 500000;
-    const monthlyGrowthRate = 17500; 
+    const monthlyGrowthRate = (user.username === 'CarlinOficial' || user.profileType === 'developer') ? 0 : 17500; 
     const remainingViews = Math.max(0, targetViews - currentViews);
     const monthsToGoal = monthlyGrowthRate > 0 ? remainingViews / monthlyGrowthRate : 0;
     
     return {
-      currentStatus: user.isMonetizationSuspended ? "Suspenso" : (currentViews >= targetViews ? "Monetizado" : "Em Escala"),
+      currentStatus: user.isMonetizationSuspended ? "Suspenso" : ((user.username === 'CarlinOficial' || user.profileType === 'developer') ? "Autoridade Ativa" : (currentViews >= targetViews ? "Monetizado" : "Em Escala")),
       daysToMonetization: Math.ceil(monthsToGoal * 30),
-      estimatedFollowers12m: user.username === 'carlinho_ofic' ? 0 : Math.floor(currentFollowers * 2.5),
+      estimatedFollowers12m: 0,
       monthlyRevenuePotential: (monthlyGrowthRate / 1000) * GROWTH_SIM_DEFAULTS.cpmmedio,
-      scalingEfficiency: currentFollowers > 0 || user.username === 'carlinho_ofic' ? Math.min(100, Math.floor((currentViews / Math.max(1, currentFollowers)) * 10)) : 0
+      scalingEfficiency: (user.username === 'CarlinOficial' || user.profileType === 'developer') ? 0 : (currentFollowers > 0 ? Math.min(100, Math.floor((currentViews / Math.max(1, currentFollowers)) * 10)) : 0)
     };
   },
 
@@ -487,7 +489,7 @@ export const impactService = {
     if (boostVal >= 20) priority = "Máxima";
     else if (boostVal >= 10) priority = "Elevada";
 
-    const baseReach = GROWTH_SIM_DEFAULTS.viewersIniciais + (GROWTH_SIM_DEFAULTS.novosViewersPorMinuto * GROWTH_SIM_DEFAULTS.tempoLiveMinutos);
+    const baseReach = (user.username === 'CarlinOficial' || user.profileType === 'developer') ? 0 : (GROWTH_SIM_DEFAULTS.viewersIniciais + (GROWTH_SIM_DEFAULTS.novosViewersPorMinuto * GROWTH_SIM_DEFAULTS.tempoLiveMinutos));
     const finalReach = Math.floor(baseReach * multiplier);
     const revenue = (finalReach / 1000) * GROWTH_SIM_DEFAULTS.cpmmedio;
 
@@ -581,7 +583,7 @@ export const impactService = {
     if (bonusPercentage > 30) {
       bonusPercentage = 30;
     }
-    return bonusPercentage / 100; // retorna 0.01 até 0.30
+    return bonusPercentage / 100; 
   },
 
   /**
@@ -593,7 +595,6 @@ export const impactService = {
     const currentBoost = post.liveEngagementBoost || 0;
     const requestedBoost = Math.floor(points / 300);
     
-    // Calculate how much room is left for the boost
     const roomLeft = MAX_LIVE_BOOST_PERCENT - currentBoost;
     
     if (roomLeft <= 0) {
@@ -617,7 +618,7 @@ export const impactService = {
   },
 
   getUnlockedFeatures(user: User) {
-    if (user.username === 'carlinho_ofic') {
+    if (user.username === 'CarlinOficial' || user.profileType === 'developer') {
       return { 
         canPost: true, 
         canLive: true, 
@@ -692,7 +693,7 @@ export const impactService = {
     const revenue = user.totalRevenue || 0;
     return { 
       reinvestment: revenue * 0.3, socialImpact: revenue * 0.1, founderIncome: revenue * 0.2, reserve: revenue * 0.4, 
-      totalValueGenerated: revenue, peopleReached: Math.floor(user.followers * 0.42), ecoScore: Math.min(100, Math.floor(revenue * 0.5)), 
+      totalValueGenerated: revenue, peopleReached: 0, ecoScore: (user.username === 'CarlinOficial' || user.profileType === 'developer') ? 0 : Math.min(100, Math.floor(revenue * 0.5)), 
       donations: impactRepository.getAll() 
     };
   }

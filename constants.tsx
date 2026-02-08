@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const Icons = {
@@ -20,17 +19,12 @@ export const Icons = {
   ),
   Plus: ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
     </svg>
   ),
   Message: ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-    </svg>
-  ),
-  User: ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
     </svg>
   ),
   Heart: ({ className, filled }: { className?: string; filled?: boolean }) => (
@@ -40,7 +34,7 @@ export const Icons = {
   ),
   Comment: ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
     </svg>
   ),
   Share: ({ className }: { className?: string }) => (
@@ -54,7 +48,7 @@ export const Icons = {
     </svg>
   ),
   Verified: ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={`${className} text-blue-500`} viewBox="0 0 24 24" fill="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" className={`${className} text-sky-400`} viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
     </svg>
   ),
@@ -66,88 +60,39 @@ export const Icons = {
   ),
 };
 
-/**
- * Replicates the brand identity provided in the image.
- */
-export const BrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg', showText?: boolean, lightText?: boolean }> = ({ 
-  size = 'md', 
-  showText = true,
-  lightText = true
-}) => {
-  const iconSizes = {
-    sm: 'h-8',
-    md: 'h-12',
-    lg: 'h-24'
-  };
-  
-  const textSizes = {
-    sm: 'text-lg',
-    md: 'text-2xl',
-    lg: 'text-5xl'
-  };
-
-  const subTextSizes = {
-    sm: 'text-[6px]',
-    md: 'text-[9px]',
-    lg: 'text-[14px]'
-  };
-
+export const BrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg', lightText?: boolean }> = ({ size = 'md', lightText = true }) => {
+  const sizes = { sm: 'text-lg', md: 'text-2xl', lg: 'text-5xl' };
+  const iconSizes = { sm: 'h-7', md: 'h-10', lg: 'h-20' };
   return (
-    <div className="flex items-center gap-3 select-none">
-      <div className={`${iconSizes[size]} aspect-square relative`}>
-        {/* Colorful Gradient Speech Bubble Icon from the Logo */}
-        <div className="w-full h-full bg-gradient-to-br from-cyan-400 via-purple-600 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-[-5deg]">
-           <div className="w-2/3 h-2/3 flex items-center justify-center relative">
-              <div className="w-3 h-3 rounded-full bg-cyan-300 absolute top-0 left-0 shadow-inner"></div>
-              <div className="w-3 h-3 rounded-full bg-blue-400 absolute bottom-0 left-1/4"></div>
-              <div className="w-3 h-3 rounded-full bg-orange-400 absolute bottom-2 right-0"></div>
-              <svg viewBox="0 0 24 24" className="w-full h-full text-white/20 absolute inset-0" fill="currentColor">
-                <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" />
-              </svg>
-           </div>
-           {/* Speech bubble tail */}
-           <div className="absolute -bottom-2 -left-1 w-4 h-4 bg-purple-700 transform rotate-45 rounded-sm"></div>
-        </div>
+    <div className="flex items-center gap-3 group cursor-pointer active:scale-95 transition-transform duration-300">
+      <div className={`aspect-square ${iconSizes[size]} bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-[0_8px_30px_rgb(59,130,246,0.2)] transform -rotate-3 group-hover:rotate-0 transition-transform duration-500`}>
+         <span className="text-white font-black italic select-none">C</span>
       </div>
-      
-      {showText && (
-        <div className="flex flex-col justify-center">
-          <h1 className={`${textSizes[size]} font-black tracking-tighter uppercase leading-none italic ${lightText ? 'text-white' : 'text-zinc-900'}`}>
-            CARLIN
-          </h1>
-          <div className="flex items-center gap-1.5 mt-0.5">
-             <div className={`h-[1px] flex-1 ${lightText ? 'bg-orange-500/50' : 'bg-orange-600/30'}`}></div>
-             <span className={`${subTextSizes[size]} font-black uppercase tracking-[0.2em] whitespace-nowrap ${lightText ? 'text-zinc-300' : 'text-zinc-600'}`}>
-               MIDIA OFIC LTDA
-             </span>
-             <div className={`h-[1px] flex-1 ${lightText ? 'bg-orange-500/50' : 'bg-orange-600/30'}`}></div>
-          </div>
-        </div>
-      )}
+      <div className="flex flex-col">
+        <h1 className={`${sizes[size]} font-black italic tracking-tighter uppercase leading-none ${lightText ? 'text-white' : 'text-zinc-950'}`}>Carlin</h1>
+        <span className={`text-[9px] font-black uppercase tracking-[0.4em] mt-1 ${lightText ? 'text-blue-500' : 'text-blue-700'}`}>Mídia</span>
+      </div>
     </div>
   );
 };
 
 export const ImpactMessage = {
   USER_MESSAGE: `
-        Este aplicativo acredita que tecnologia também é responsabilidade social.
-        Por isso, 10% do lucro é transformado em cestas básicas para famílias que precisam.
-        Quando a plataforma cresce, a comunidade cresce junto.
+        Investimos em quem cria. Transformamos 10% do nosso lucro social em doações reais, registradas com transparência total.
+        Tecnologia por um propósito humano.
     `
 };
 
 export const SupportMessages = {
-  TITLE: "Apoie o desenvolvimento do aplicativo",
-  DESCRIPTION: "Este aplicativo está sendo desenvolvido de forma independente. Para mantê-lo funcionando, atualizado, seguro e acessível, criamos um apoio opcional no valor de R$ 9,90.",
+  TITLE: "Desenvolvimento Independente",
+  DESCRIPTION: "Carlin Mídia é construída por um desenvolvedor solo com foco total em privacidade e valor real. Seu apoio mantém o projeto soberano.",
   DETAILS: [
-    "Servidores e infraestrutura",
-    "Segurança e proteção de dados",
-    "Ferramentas de desenvolvimento",
-    "Atualizações contínuas",
-    "Manutenção do modo Lite para celulares antigos",
-    "Sustentação do projeto no início"
+    "Servidores de alta performance",
+    "Segurança avançada de dados",
+    "Experiência livre de manipulação",
+    "Impacto social documentado"
   ],
-  SOCIAL_IMPACT: "Além disso, parte do lucro do aplicativo é destinada à compra de cestas básicas para famílias em situação de vulnerabilidade.",
-  OPTIONAL: "O apoio é totalmente opcional. Todas as funções principais do aplicativo continuam gratuitas.",
-  BUTTON: "Apoiar por R$ 9,90"
+  SOCIAL_IMPACT: "Parte do faturamento é destinada à compra de cestas básicas para comunidades locais.",
+  OPTIONAL: "O apoio é totalmente voluntário e não interfere no alcance do seu conteúdo.",
+  BUTTON: "Apoiar Projeto • R$ 9,90"
 };

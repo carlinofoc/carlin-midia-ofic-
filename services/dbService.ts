@@ -1,4 +1,3 @@
-
 import { User, ProfileLink, VerificationLevel } from '../types';
 import { 
   encrypt, 
@@ -76,11 +75,19 @@ export const dbService = {
     const nome_encrypted = await encrypt(nome, masterKey);
     const email_encrypted = await encrypt(email, masterKey);
 
+    // Adição de propriedades obrigatórias para o tipo User no objeto newUser para corrigir erro de tipo
     const newUser: User = {
       id: `carlin_usr_${crypto.randomUUID().slice(0, 8)}`,
       username: nome.toLowerCase().replace(/\s/g, '.'),
       displayName: nome,
       name: nome, // UserAccount.kt
+      // Propriedades obrigatórias adicionadas
+      profileType: 'common',
+      postsCount: 0,
+      followersCount: 0,
+      followingCount: 0,
+      socialMetricsEnabled: true,
+      officialLink: '',
       nome_encrypted,
       email_encrypted,
       passwordHash: pwHash,

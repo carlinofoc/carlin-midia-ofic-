@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.carlin.midia.ofic"
+    namespace "com.carlinmidia.app"
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.carlin.midia.ofic"
+        applicationId "com.carlinmidia.app"
         minSdk 23
         targetSdk 35
         versionCode 35

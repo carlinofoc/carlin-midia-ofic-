@@ -15,6 +15,13 @@ const MOCK_CHATS: Chat[] = [
       name: 'Elena Crypto',
       email: 'elena@example.com',
       avatar: 'https://picsum.photos/seed/chat1/100/100', 
+      // Adição de propriedades obrigatórias para o tipo User
+      profileType: 'common',
+      postsCount: 0,
+      followersCount: 120,
+      followingCount: 100,
+      socialMetricsEnabled: true,
+      officialLink: '',
       followers: 120, 
       following: 100,
       // Added missing properties viewsLastYear and monetizationEnrolled
@@ -47,6 +54,13 @@ const MOCK_CHATS: Chat[] = [
       name: 'Nexus AI',
       email: 'nexus@carlin.ai',
       avatar: 'https://picsum.photos/seed/ai/100/100', 
+      // Adição de propriedades obrigatórias para o tipo User
+      profileType: 'common',
+      postsCount: 0,
+      followersCount: 1000,
+      followingCount: 0,
+      socialMetricsEnabled: true,
+      officialLink: '',
       followers: 1000, 
       following: 0, 
       isVerified: true,

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, Story, User, MusicTrack } from '../types';
 import { generateCaption } from '../services/geminiService';
@@ -30,6 +29,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onStoryCreated, 
   const livePreviewRef = useRef<HTMLVideoElement>(null);
 
   const features = impactService.getUnlockedFeatures(currentUser);
+  const isDeveloper = currentUser?.profileType === 'developer';
   const canLive = features.canLive;
 
   useEffect(() => {
@@ -103,6 +103,9 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onStoryCreated, 
   };
 
   const handlePublish = () => {
+    if (isDeveloper) {
+      return alert("Conta de autoridade não pode publicar conteúdo social.");
+    }
     if (publishType === 'live' && !canLive) {
       return alert('Erro: Você precisa ter pelo menos 50 seguidores para iniciar uma Live!');
     }
@@ -170,11 +173,15 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onStoryCreated, 
           {publishType === 'live' ? (
             <div className="w-full h-full relative">
               <video ref={livePreviewRef} autoPlay muted playsInline className="w-full h-full object-cover -scale-x-100" />
-              {!canLive && (
+              {(!canLive || isDeveloper) && (
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center">
                    <span className="text-4xl mb-4">🔒</span>
-                   <h3 className="text-xl font-black uppercase text-white">Live Bloqueada</h3>
-                   <p className="text-xs text-zinc-500 mt-2">Mínimo 50 seguidores necessários para transmitir.</p>
+                   <h3 className="text-xl font-black uppercase text-white">
+                     {isDeveloper ? 'Soberania Ativa' : 'Live Bloqueada'}
+                   </h3>
+                   <p className="text-xs text-zinc-500 mt-2">
+                     {isDeveloper ? 'Perfis de autoridade não podem transmitir socialmente.' : 'Mínimo 50 seguidores necessários para transmitir.'}
+                   </p>
                 </div>
               )}
             </div>
@@ -238,11 +245,17 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onStoryCreated, 
 
           <button 
             onClick={handlePublish}
-            disabled={(publishType !== 'live' && !mediaFile) || (publishType === 'live' && !canLive)}
+            disabled={(publishType !== 'live' && !mediaFile) || (publishType === 'live' && !canLive) || isDeveloper}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs active:scale-95 transition-all shadow-2xl disabled:opacity-20"
           >
-            Publicar {publishType}
+            {isDeveloper ? 'Publicação Desativada' : `Publicar ${publishType}`}
           </button>
+          
+          {isDeveloper && (
+            <p className="text-[8px] text-center font-black uppercase text-zinc-600 tracking-widest italic">
+              A conta CarlinOficial é reservada para fins técnicos.
+            </p>
+          )}
         </div>
       </div>
 

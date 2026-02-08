@@ -17,29 +17,21 @@ export type PaymentMethod = 'PayPal' | 'PIX' | 'Transferência Bancária';
 
 export type MonetizationLevel = 'NOT_ELIGIBLE' | 'CREATOR_PROGRAM' | 'PARTIAL_MONETIZATION' | 'ADVANCED_PARTIAL_MONETIZATION' | 'FULL_MONETIZATION';
 
-// Add missing ViewPattern interface to fix impactService.ts errors
 export interface ViewPattern {
   is_spike: boolean;
 }
 
-// Add missing EngagementPattern interface to fix impactService.ts errors
 export interface EngagementPattern {
   too_concentrated: boolean;
   repeated_accounts: boolean;
   low_retention: boolean;
 }
 
-/**
- * Updated TrustDetails to use newly exported interfaces
- */
 export interface TrustDetails {
   view_pattern: ViewPattern;
   engagement_pattern: EngagementPattern;
 }
 
-/**
- * Replicates Python: class CreatorDashboard logic
- */
 export interface CreatorDashboardSnapshot {
   creator_id: string;
   followers: number;
@@ -58,9 +50,6 @@ export interface CreatorDashboardSnapshot {
   disclaimer?: string;
 }
 
-/**
- * Fix: Added MonthlyCreatorStats interface based on Python class MonthlyCreatorStats
- */
 export interface MonthlyCreatorStats {
   creator_id: string;
   year: number;
@@ -135,8 +124,23 @@ export interface User {
   chave: string;
   avatar: string;
   bio?: string;
+  
+  // Tipagem de Perfil Solicitada
+  profileType: "common" | "creator" | "developer";
+  
+  // Métricas Sociais Solicitadas
+  postsCount: number;
+  followersCount: number;
+  followingCount: number;
+  
+  // Visibilidade e Link Oficial
+  socialMetricsEnabled: boolean;
+  officialLink: string;
+
+  // Campos legados para compatibilidade
   followers: number;
   following: number;
+
   viewsLastYear: number;
   averageViewsPerVideo: number;
   monetizationEnrolled: boolean;
