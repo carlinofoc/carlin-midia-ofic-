@@ -25,13 +25,13 @@ interface ProfileProps {
   onOpenCreatorPlus: () => void;
   onOpenRoadmap: () => void;
   onOpenMonetizationInfo: () => void;
+  onOpenMonetizationStatus?: () => void;
   onOpenNotificationSettings: () => void;
   onOpenDeveloperInfo: () => void;
   onOpenDeveloperManifesto: () => void;
   onOpenAdvancedSettings: () => void;
   onOpenImpactSocial?: () => void; 
   onOpenSupport?: () => void;
-  onOpenMonetizationStatus?: () => void;
   onOpenMembershipManager?: () => void;
   onOpenAdmin?: () => void;
 }
@@ -104,56 +104,56 @@ const Profile: React.FC<ProfileProps> = ({
         </div>
       </div>
 
-      <div className="px-5 py-4 space-y-6">
-        <div className="flex items-center justify-between gap-6">
+      <div className="px-5 py-4 space-y-8">
+        {/* Profile Header Center Focused */}
+        <div className="flex flex-col items-center text-center space-y-4">
           <div className="relative group cursor-pointer" onClick={() => setShowEditPhoto(true)}>
-            {/* NO PHOTO MODE: Renders a styled initial instead of an image */}
-            <div className={`w-24 h-24 md:w-32 md:h-32 rounded-full p-[3px] transition-all ${user.verificationLevel === VerificationLevel.OURO ? 'bg-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]' : 'bg-zinc-800'}`}>
+            <div className={`w-28 h-28 md:w-36 md:h-36 rounded-full p-[3px] transition-all ${user.verificationLevel === VerificationLevel.OURO ? 'bg-yellow-500 shadow-[0_0_30px_rgba(234,179,8,0.2)]' : 'bg-zinc-800'}`}>
               <div className={`w-full h-full rounded-full ${isDark ? 'bg-zinc-900' : 'bg-white'} overflow-hidden border-2 ${isDark ? 'border-black' : 'border-white'} relative flex items-center justify-center`}>
-                <span className="text-3xl md:text-4xl font-black text-zinc-600 italic select-none">
+                <span className="text-4xl md:text-5xl font-black text-zinc-600 italic select-none">
                   {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'C'}
                 </span>
               </div>
             </div>
             {user.isFaciallyVerified && (
-              <div className={`absolute bottom-0 right-0 p-1.5 rounded-full border-4 border-black shadow-lg ${user.verificationLevel === VerificationLevel.OURO ? 'bg-yellow-500' : 'bg-blue-600'}`}>
-                 <Icons.Verified className="w-5 h-5 text-white" />
+              <div className={`absolute bottom-1 right-1 p-2 rounded-full border-4 border-black shadow-lg ${user.verificationLevel === VerificationLevel.OURO ? 'bg-yellow-500' : 'bg-blue-600'}`}>
+                 <Icons.Verified className="w-6 h-6 text-white" />
               </div>
             )}
           </div>
 
-          <div className="flex flex-1 justify-around text-center">
-            <div><p className="font-black text-lg">0</p><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Posts</p></div>
-            <div><p className="font-black text-lg">{user.followers.toLocaleString()}</p><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Seguidores</p></div>
-            <div><p className="font-black text-lg">{user.following.toLocaleString()}</p><p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Seguindo</p></div>
-          </div>
-        </div>
+          <div className="space-y-1">
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2">
+                <h2 className="font-black text-2xl tracking-tighter">{user.displayName}</h2>
+                {getTierBadge(user.verificationLevel)}
+              </div>
+              <p className="text-xs text-orange-500 font-bold uppercase tracking-widest flex items-center gap-2 leading-none">
+                @{user.username}
+                {isLite && <span className="bg-orange-500/20 text-orange-500 text-[8px] px-1.5 py-0.5 rounded font-black">LITE</span>}
+              </p>
+            </div>
 
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <h2 className="font-black text-lg">{user.displayName}</h2>
-            {getTierBadge(user.verificationLevel)}
             {features.hasGrowthBadge && (
-              <span className="bg-blue-600/20 text-blue-400 text-[7px] font-black px-2 py-0.5 rounded-full border border-blue-500/30">📈 Criador em Crescimento</span>
+              <div className="mt-2">
+                <span className="bg-blue-600/10 text-blue-400 text-[8px] font-black px-3 py-1 rounded-full border border-blue-500/20 uppercase tracking-widest">📈 Criador em Crescimento</span>
+              </div>
             )}
-          </div>
-          <p className="text-xs text-orange-500 font-bold uppercase tracking-widest flex items-center gap-2 leading-none">
-            @{user.username}
-            {isLite && <span className="bg-orange-500/20 text-orange-500 text-[8px] px-1.5 py-0.5 rounded font-black">LITE</span>}
-          </p>
 
-          <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'} leading-relaxed mt-3 whitespace-pre-wrap cursor-pointer`} onClick={() => setShowEditBio(true)}>
-            {user.bio || "Toque aqui para adicionar sua biografia."}
-          </p>
+            <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-600'} leading-relaxed mt-4 max-w-sm mx-auto whitespace-pre-wrap cursor-pointer hover:text-white transition-colors`} onClick={() => setShowEditBio(true)}>
+              {user.bio || "Toque aqui para adicionar sua biografia."}
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-4">
+        {/* Action Buttons Grid */}
+        <div className="grid grid-cols-2 gap-3">
           <button 
             onClick={features.canSeeBasicAnalytics ? onOpenDashboard : () => alert('Desbloqueie com 50 seguidores.')} 
             className={`bg-zinc-900 border border-zinc-800 text-white py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all ${!features.canSeeBasicAnalytics ? 'opacity-40 grayscale' : ''}`}
           >
             <span className="text-xl">📊</span>
-            <span className="text-[8px] font-black uppercase tracking-widest">Métricas Reais {!features.canSeeBasicAnalytics && '🔒'}</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Analytics Real {!features.canSeeBasicAnalytics && '🔒'}</span>
           </button>
           
           <button onClick={onOpenMonetizationStatus} className="bg-indigo-600/10 border border-indigo-500/30 text-indigo-500 py-4 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg active:scale-[0.98] transition-all">
@@ -178,9 +178,9 @@ const Profile: React.FC<ProfileProps> = ({
 
         <button 
           onClick={onOpenSupport}
-          className="w-full bg-gradient-to-r from-blue-600/20 to-orange-500/20 border border-white/10 py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-inner"
+          className="w-full bg-gradient-to-r from-blue-600/10 to-orange-500/10 border border-white/5 py-5 rounded-[2rem] flex items-center justify-center gap-4 active:scale-[0.98] transition-all shadow-inner"
         >
-          <span className="text-xl">👨‍💻</span>
+          <span className="text-2xl">👨‍💻</span>
           <div className="text-left">
             <h4 className="text-[10px] font-black uppercase text-white tracking-widest leading-none">Apoie o Desenvolvedor</h4>
             <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Garantindo a soberania do Carlin</p>
@@ -188,7 +188,7 @@ const Profile: React.FC<ProfileProps> = ({
         </button>
 
         {!user.isFaciallyVerified && (
-           <div className="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[2rem] shadow-xl shadow-blue-600/20 animate-pulse cursor-pointer" onClick={onOpenVerification}>
+           <div className="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[2.5rem] shadow-xl shadow-blue-600/20 animate-pulse cursor-pointer" onClick={onOpenVerification}>
               <div className="flex items-center justify-between">
                  <div className="space-y-1">
                     <h4 className="text-xs font-black uppercase text-white tracking-tighter italic">Eleve seu Perfil</h4>
@@ -199,30 +199,30 @@ const Profile: React.FC<ProfileProps> = ({
            </div>
         )}
 
-        <div className="space-y-3 pt-2">
+        {/* Links Section */}
+        <div className="space-y-4 pt-2">
           <div className="flex justify-between items-center px-1">
-             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Vínculos Ativos</h3>
-             <button onClick={() => setShowEditLinks(true)} className="text-[8px] font-black text-orange-500 uppercase tracking-widest hover:underline">Editar</button>
+             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">Vínculos de Impacto</h3>
+             <button onClick={() => setShowEditLinks(true)} className="text-[8px] font-black text-orange-500 uppercase tracking-widest hover:underline">Gerenciar</button>
           </div>
           <div className="space-y-3">
             {activeLinks.length > 0 ? activeLinks.map((link) => (
               <LinkCard key={link.id} link={link} isDark={isDark} cardClasses={cardClasses} onClick={() => handleLinkClick(link)} isSubscriber={!!user.isPremium} />
-            )) : <p className="text-[10px] text-zinc-600 uppercase font-black px-1">Nenhum link ativo.</p>}
+            )) : <p className="text-[10px] text-zinc-700 uppercase font-black px-1 text-center py-6">Nenhum vínculo ativo no momento.</p>}
           </div>
         </div>
       </div>
 
-      <div className={`flex border-t ${borderClasses} mt-4`}>
-        <button onClick={() => setTab('posts')} className={`flex-1 flex justify-center py-4 ${tab === 'posts' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-orange-500 text-orange-500'}` : 'text-zinc-500'}`}><Icons.Home className="w-6 h-6" /></button>
-        <button onClick={() => setTab('saved')} className={`flex-1 flex justify-center py-4 ${tab === 'saved' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-orange-500 text-orange-500'}` : 'text-zinc-500'}`}><Icons.Bookmark className="w-6 h-6" /></button>
+      <div className={`flex border-t ${borderClasses} mt-10`}>
+        <button onClick={() => setTab('posts')} className={`flex-1 flex justify-center py-5 ${tab === 'posts' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-orange-500 text-orange-500'}` : 'text-zinc-700'}`}><Icons.Home className="w-6 h-6" /></button>
+        <button onClick={() => setTab('saved')} className={`flex-1 flex justify-center py-5 ${tab === 'saved' ? `border-t-2 ${isDark ? 'border-white text-white' : 'border-orange-500 text-orange-500'}` : 'text-zinc-700'}`}><Icons.Bookmark className="w-6 h-6" /></button>
       </div>
 
-      {/* CLEAN GRID MODE: No mock photos rendered here */}
-      <div className="py-20 text-center space-y-4 opacity-30">
+      <div className="py-24 text-center space-y-4 opacity-20">
         <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 mx-auto flex items-center justify-center">
            <Icons.Home className="w-8 h-8 text-zinc-700" />
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Nenhuma publicação disponível</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Nenhuma publicação arquivada</p>
       </div>
 
       {showEditPhoto && <EditProfilePhoto currentAvatar={user.avatar || 'assets/profile.png'} onUpdate={handleAvatarUpdate} onCancel={() => setShowEditPhoto(false)} />}
@@ -242,7 +242,7 @@ const LinkCard: React.FC<{ link: ProfileLink; isDark: boolean; cardClasses: stri
 
   if (isLocked) {
     return (
-      <button onClick={onClick as any} className={`w-full block ${cardClasses} rounded-[1.5rem] p-5 border-2 ${typeStyles} opacity-90`}>
+      <button onClick={onClick as any} className={`w-full block ${cardClasses} rounded-[2rem] p-6 border-2 ${typeStyles} opacity-90`}>
         <div className="flex flex-col items-center text-center space-y-2">
           <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Conteúdo Exclusivo 🧪</p>
           <p className="text-xs font-black text-white uppercase italic tracking-tighter">Assine o Carlin Lab para acessar</p>
@@ -252,15 +252,18 @@ const LinkCard: React.FC<{ link: ProfileLink; isDark: boolean; cardClasses: stri
   }
 
   return (
-    <a href={link.url} target="_blank" rel="noopener noreferrer" onClick={onClick as any} className={`block ${cardClasses} rounded-[1.5rem] transition-all hover:scale-[1.02] border-2 ${typeStyles} ${isSmall ? 'p-3' : 'p-5'}`}>
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
+    <a href={link.url} target="_blank" rel="noopener noreferrer" onClick={onClick as any} className={`block ${cardClasses} rounded-[2rem] transition-all hover:scale-[1.01] border-2 ${typeStyles} ${isSmall ? 'p-4' : 'p-6'}`}>
+      <div className="flex justify-between items-center">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <strong className={`block font-black uppercase tracking-tight truncate ${isSmall ? 'text-[11px]' : 'text-sm'} ${isExclusive ? 'text-purple-400' : isMonetized ? 'text-green-400' : isPinned ? 'text-blue-400' : 'text-white'}`}>
               {link.title}
             </strong>
           </div>
-          {!isSmall && <span className="text-[11px] text-zinc-500 truncate block font-medium">{link.url}</span>}
+          {!isSmall && <span className="text-[10px] text-zinc-500 truncate block font-medium opacity-60">{link.url.replace('https://', '')}</span>}
+        </div>
+        <div className="ml-4 shrink-0 text-zinc-700">
+           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7-7 7" /></svg>
         </div>
       </div>
     </a>
