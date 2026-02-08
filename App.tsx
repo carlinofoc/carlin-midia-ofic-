@@ -45,12 +45,12 @@ declare global {
   }
 }
 
-// Configuração definitiva dos Vínculos de Impacto (Links Oficiais)
+// Domínios Oficiais do Desenvolvedor
 const DEVELOPER_LINKS: ProfileLink[] = [
-  { id: 'l1', title: 'Website Oficial', url: 'https://carlinmidia.com', clicks: 850, views: 2400, type: 'pinned', status: 'active' },
-  { id: 'l2', title: 'Plataforma Web', url: 'https://app.carlinmidia.com', clicks: 420, views: 1500, type: 'normal', status: 'active' },
-  { id: 'l3', title: 'Aplicativo Mobile', url: 'https://carlinmidia.app', clicks: 310, views: 900, type: 'normal', status: 'active' },
-  { id: 'l4', title: 'Portfólio Carlin', url: 'https://carlinofic.com', clicks: 185, views: 600, type: 'normal', status: 'active' },
+  { id: 'l1', title: 'carlinmidia.com', url: 'https://carlinmidia.com', clicks: 1240, views: 5600, type: 'pinned', status: 'active' },
+  { id: 'l2', title: 'app.carlinmidia.com', url: 'https://app.carlinmidia.com', clicks: 890, views: 3200, type: 'normal', status: 'active' },
+  { id: 'l3', title: 'carlinmidia.app', url: 'https://carlinmidia.app', clicks: 650, views: 1800, type: 'normal', status: 'active' },
+  { id: 'l4', title: 'carlinofic.com', url: 'https://carlinofic.com', clicks: 320, views: 1100, type: 'normal', status: 'active' },
 ];
 
 const App: React.FC = () => {
@@ -116,28 +116,32 @@ const App: React.FC = () => {
     if (!identity) {
       setCurrentView('register');
     } else if (sessionActive) {
-      // Mocked user with 1,200 followers and official links
+      // PERFIL DO DESENVOLVEDOR: 1.200 Seguidores + Domínios + OURO
       const mockedUser: User = { 
         ...identity!, 
         followers: 1200, 
-        following: 0,
-        viewsLastYear: 185000,
-        averageViewsPerVideo: 12400,
+        following: 12,
+        viewsLastYear: 280000,
+        averageViewsPerVideo: 18400,
         monetizationEnrolled: true,
-        totalRevenue: 2450.75,
-        availableBalance: 1200.50,
-        points: 450, 
+        totalRevenue: 2850.50,
+        availableBalance: 1420.25,
+        points: 850, 
         displayName: 'Carlinho Ofíc', 
         username: 'carlinho_ofic',
-        avatar: '', // Mantendo sem foto como solicitado
-        firstViewDate: '2025-01-15', 
+        avatar: '', // Clean UI: Foto removida para usar iniciais estilizadas
+        firstViewDate: '2024-12-01', 
         isActive: true, 
+        isVerified: true,
+        isFaciallyVerified: true,
+        verificationLevel: VerificationLevel.OURO,
+        level: VerificationLevel.OURO,
         links: DEVELOPER_LINKS,
         membershipTiers: [
-          { id: 't1', name: 'Bronze', price: 5, benefits: ['Conteúdo exclusivo', 'Acesso Labs'], subscriberCount: 54 }
+          { id: 't1', name: 'Bronze', price: 9.90, benefits: ['Acesso Labs', 'Badge exclusiva'], subscriberCount: 124 }
         ],
         withdrawalHistory: [
-          { id: 'wh1', amount: 500, method: 'PIX' as PaymentMethod, status: 'PAID' as WithdrawalStatus, date: '2025-02-10' }
+          { id: 'h1', amount: 850, method: 'PIX' as PaymentMethod, status: 'PAID' as WithdrawalStatus, date: '15/05/2024' }
         ],
         activeSubscriptions: []
       };
@@ -168,7 +172,7 @@ const App: React.FC = () => {
 
     const isLiteActive = liteMode !== LiteMode.NORMAL;
     const loadLimit = isLiteActive ? 10 : 40;
-    const categories = ["Marketing Digital", "Estratégia", "Growth", "Design", "Monetização", "Storytelling", "AI"];
+    const categories = ["Tecnologia", "Segurança", "Desenvolvimento", "Marketing Digital", "Impacto Social"];
     
     const generatedPosts: Post[] = Array.from({ length: loadLimit }).map((_, i) => {
       const type = i === 2 ? 'live' : (i % 4 === 0 ? 'video' : 'image');
@@ -177,21 +181,20 @@ const App: React.FC = () => {
         autor_id: `u-${i}`,
         username: `expert_${i}`,
         userAvatar: `https://picsum.photos/seed/post-${i}/150/150`,
-        content: type === 'live' ? 'AO VIVO: Estratégias de Crescimento 2025!' : `Insights estratégicos sobre ${categories[i % categories.length]}. Conteúdo otimizado para o seu perfil.`,
+        content: type === 'live' ? 'AO VIVO: Codando a nova versão do Carlin!' : `Auditando segurança v5.9 do ecossistema. ${categories[i % categories.length]} é prioridade.`,
         category: categories[i % categories.length],
         media: [i % 4 === 0 ? 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-dancing-2322-large.mp4' : `https://picsum.photos/seed/media-${i}/1080/1080`],
         type: type,
-        likes: Math.floor(Math.random() * 500),
-        comments: Math.floor(Math.random() * 50),
-        shares: Math.floor(Math.random() * 20),
-        views: Math.floor(Math.random() * 10000) + 2000, 
-        duration: i % 4 === 0 ? (i % 8 === 0 ? 220 : 65) : 0, 
+        likes: Math.floor(Math.random() * 800),
+        comments: Math.floor(Math.random() * 120),
+        shares: Math.floor(Math.random() * 45),
+        views: Math.floor(Math.random() * 15000) + 5000, 
+        duration: i % 4 === 0 ? 45 : 0, 
         createdAt: new Date(Date.now() - i * 3600000).toISOString(),
         trendingScore: Math.floor(Math.random() * 100),
         timestamp: type === 'live' ? 'AO VIVO' : `${i + 1}h atrás`,
         isVerified: i % 5 === 0,
         exclusiveTierId: i === 3 ? 't1' : undefined,
-        liveEngagementBoost: type === 'live' ? Math.floor(Math.random() * 15) : undefined
       } as Post;
     });
 
@@ -212,20 +215,22 @@ const App: React.FC = () => {
   const handleRegistrationComplete = (user: User, startLite: boolean) => {
     sessionStorage.setItem('carlin_session', 'true');
     setLiteMode(startLite ? LiteMode.LITE_ANTIGO : LiteMode.NORMAL);
+    // Sync post-registration state
     const mockedUser = { 
       ...user, 
       followers: 1200, 
-      following: 0, 
-      viewsLastYear: 185000, 
-      averageViewsPerVideo: 12400, 
+      following: 12, 
+      viewsLastYear: 280000, 
+      averageViewsPerVideo: 18400, 
       monetizationEnrolled: true, 
       displayName: 'Carlinho Ofíc', 
       username: 'carlinho_ofic', 
-      points: 450, 
-      firstViewDate: new Date().toISOString().split('T')[0], 
-      isActive: true, 
-      avatar: '',
-      links: DEVELOPER_LINKS
+      isVerified: true,
+      isFaciallyVerified: true,
+      verificationLevel: VerificationLevel.OURO,
+      level: VerificationLevel.OURO,
+      links: DEVELOPER_LINKS,
+      avatar: '' 
     };
     setCurrentUser(mockedUser);
     setIsAuthenticated(true);
@@ -246,19 +251,18 @@ const App: React.FC = () => {
           const mocked = { 
             ...u, 
             followers: 1200, 
-            following: 0, 
-            viewsLastYear: 185000, 
-            averageViewsPerVideo: 12400, 
+            following: 12, 
+            viewsLastYear: 280000, 
+            averageViewsPerVideo: 18400, 
             monetizationEnrolled: true, 
-            totalRevenue: 2450.75, 
-            availableBalance: 1200.50, 
-            points: 450, 
+            isVerified: true,
+            isFaciallyVerified: true,
+            verificationLevel: VerificationLevel.OURO,
+            level: VerificationLevel.OURO,
+            links: DEVELOPER_LINKS,
             displayName: 'Carlinho Ofíc', 
             username: 'carlinho_ofic', 
-            firstViewDate: '2025-01-15', 
-            isActive: true, 
-            avatar: '',
-            links: DEVELOPER_LINKS
+            avatar: '' 
           };
           setCurrentUser(mocked as User); 
           setIsAuthenticated(true); 
